@@ -1,6 +1,7 @@
 "use client";
 
 import Sidebar from "../../components/Sidebar";
+import PageTransition from "../../components/PageTransition";
 import SessionWarningToast from "@/components/SessionWarningToast";
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -126,7 +127,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-8 animate-fade-in">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
 

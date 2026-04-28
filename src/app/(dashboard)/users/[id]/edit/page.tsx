@@ -14,7 +14,6 @@ interface User {
   email: string;
   phone?: string;
   role: Role;
-  status: "Aktif" | "Nonaktif";
 }
 
 export default function EditUserPage() {
@@ -29,7 +28,6 @@ export default function EditUserPage() {
     email: "",
     phone: "",
     role: "Marketing" as Role,
-    status: "Aktif" as "Aktif" | "Nonaktif",
   });
 
   const userId = params.id as string;
@@ -56,12 +54,14 @@ export default function EditUserPage() {
         const data = await response.json();
         const user = data.data;
 
+        // Capitalize role: "manager" -> "Manager"
+        const capitalizedRole = (user.role.charAt(0).toUpperCase() + user.role.slice(1)) as Role;
+
         setFormData({
           name: user.name,
           email: user.email,
           phone: user.phone || "",
-          role: user.role,
-          status: user.status || "Aktif",
+          role: capitalizedRole,
         });
       } catch (err) {
         console.error("Fetch user error:", err);
@@ -117,7 +117,6 @@ export default function EditUserPage() {
           email: formData.email,
           phone: formData.phone,
           role: formData.role.toLowerCase(), // Convert to lowercase untuk konsistensi
-          status: formData.status,
         }),
       });
 
@@ -229,24 +228,8 @@ export default function EditUserPage() {
             </select>
           </div>
 
-          {/* Status */}
-          <div className="animate-slide-in-up" style={{animationDelay: '150ms'}}>
-            <label className="block text-xs sm:text-sm font-semibold text-slate-900 mb-2">
-              🔄 Status *
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-slate-900 font-semibold text-sm hover:border-slate-400"
-            >
-              <option value="Aktif">✓ Aktif</option>
-              <option value="Nonaktif">✗ Nonaktif</option>
-            </select>
-          </div>
-
           {/* Buttons */}
-          <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 animate-slide-in-up" style={{animationDelay: '175ms'}}>
+          <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 animate-slide-in-up" style={{animationDelay: '150ms'}}>
             <button
               type="button"
               onClick={() => router.back()}
