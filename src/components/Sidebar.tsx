@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Home, ClipboardCheck, CheckCircle, Users, FileText } from "lucide-react";
+import { LayoutDashboard, DollarSign, BarChart3, CheckCircle, Users, FileText, TrendingUp, Archive } from "lucide-react";
 
 type Role = "Admin" | "Marketing" | "Manager" | "Owner";
 
@@ -44,8 +44,10 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
   // Definisi Menu berdasarkan Role
   const menuItems = [
     { label: "Dashboard", href: "/", roles: ["Admin", "Marketing", "Manager", "Owner"], icon: LayoutDashboard },
-    { label: "Data Unit Rumah", href: "/units", roles: ["Admin", "Marketing", "Manager", "Owner"], icon: Home },
-    { label: "Ajukan Booking", href: "/booking", roles: ["Marketing"], icon: ClipboardCheck },
+    { label: "Manajemen Transaksi", href: "/transactions", roles: ["Admin", "Manager", "Owner"], icon: TrendingUp },
+    { label: "Laporan Neraca", href: "/reports/balance-sheet", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Laba Rugi", href: "/reports/income-statement", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
+    { label: "Pengarsipan Laporan", href: "/reports/archive", roles: ["Admin", "Manager", "Owner"], icon: Archive },
     { label: "Halaman Approval", href: "/approval", roles: ["Manager", "Owner"], icon: CheckCircle },
     { label: "Manajemen User", href: "/users", roles: ["Admin"], icon: Users },
     { label: "Activity Log", href: "/activity-log", roles: ["Admin", "Manager", "Owner"], icon: FileText },
@@ -67,7 +69,7 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
           PRO<span className="text-white">DEV</span>
         </h1>
         <p className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase mt-1">
-          Housing System
+          Finance Management
         </p>
       </div>
 
