@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Desktop Sidebar */}
-      <div className="hidden md:fixed md:left-0 md:top-0 md:w-64 md:h-screen md:block md:z-10">
+      <div className="hidden md:fixed md:left-0 md:top-0 md:w-64 md:h-screen md:block md:z-10 print:hidden">
         <Sidebar role={user.role} />
       </div>
 
@@ -90,9 +90,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Main Content Area */}
-      <div className="flex flex-col md:ml-64 min-h-screen">
+      <div className="flex flex-col md:ml-64 min-h-screen print:ml-0">
         {/* Header */}
-        <header className="h-16 bg-white border-b px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
+        <header className="h-16 bg-white border-b px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 print:hidden">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Hamburger Menu - Mobile only */}
             <button

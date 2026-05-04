@@ -7,6 +7,7 @@ export interface User {
   email: string;
   name: string;
   role: "Admin" | "Marketing" | "Manager" | "Owner";
+  companyId?: string | number;
 }
 
 interface AuthContextType {
@@ -15,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (token: string, user: User) => void;
+  loginWithCredentials: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   checkSession: () => Promise<void>;
   remainingIdleSeconds: number;
@@ -131,6 +133,132 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(newUser));
     // Setup timeouts akan trigger via useEffect when isAuthenticated changes
+  };
+
+  const loginWithCredentials = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      console.log("🔐 Attempting login to:", `${apiUrl}/api/auth/login`);
+      
+      const response = await fetch(
+        `${apiUrl}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+
+      console.log("📝 Response status:", response.status);
+      console.log("📝 Response statusText:", response.statusText);
+      
+      const contentType = response.headers.get("content-type");
+      console.log("📝 Content-Type:", contentType);
+
+      // Check if response is HTML (error page)
+      if (contentType?.includes("text/html")) {
+        const textResponse = await response.text();
+        console.error("❌ Backend returned HTML (error page):", textResponse.substring(0, 200));
+        return {
+          success: false,
+          error: "Backend error - check server logs",
+        };
+      }
+
+      let data;
+      const text = await response.text();
+      console.log("📝 Raw response body:", text.substring(0, 500));
+      
+      if (!text) {
+        console.warn("⚠️  Empty response body from backend");
+        data = {};
+      } else {
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error("❌ Failed to parse JSON:", e);
+          console.log("Response text:", text);
+          return {
+            success: false,
+            error: "Invalid response format from backend",
+          };
+        }
+      }
+
+      console.log("📊 Parsed data:", JSON.stringify(data, null, 2));
+
+      if (!response.ok) {
+        console.error("❌ HTTP error:", { status: response.status, data });
+        return {
+          success: false,
+          error: data?.message || data?.error || `Login failed (${response.status})`,
+        };
+      }
+
+      // Backend mungkin return langsung { token, user } tanpa wrapper
+      if (data?.token && data?.user) {
+        console.log("✅ Format 1: Direct token + user");
+        const user: User = {
+          id: data.user.id?.toString() || "",
+          email: data.user.email,
+          name: data.user.name,
+          role: data.user.role as User["role"],
+          companyId: data.user.companyId,
+        };
+        login(data.token, user);
+        return { success: true };
+      }
+
+      // Atau format { success: true, data: { token, user } }
+      if (data?.success && data?.data) {
+        console.log("✅ Format 2: Wrapped in success + data");
+        const { token, user: userData } = data.data;
+        const user: User = {
+          id: userData.id?.toString() || "",
+          email: userData.email,
+          name: userData.name,
+          role: userData.role as User["role"],
+          companyId: userData.companyId,
+        };
+        login(token, user);
+        return { success: true };
+      }
+
+      // Atau format { success: true, token, user }
+      if (data?.success && data?.token && data?.user) {
+        console.log("✅ Format 3: Direct properties");
+        const user: User = {
+          id: data.user.id?.toString() || "",
+          email: data.user.email,
+          name: data.user.name,
+          role: data.user.role as User["role"],
+          companyId: data.user.companyId,
+        };
+        login(data.token, user);
+        return { success: true };
+      }
+
+      console.error("❌ Unknown response format:", {
+        keys: Object.keys(data || {}),
+        data,
+      });
+
+      return {
+        success: false,
+        error: "Backend returned unexpected format",
+      };
+    } catch (error: any) {
+      console.error("❌ Error:", error?.message);
+      return {
+        success: false,
+        error: error?.message || "Network error",
+      };
+    }
   };
 
   const logout = () => {
@@ -298,6 +426,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated,
     login,
+    loginWithCredentials,
     logout,
     checkSession,
     remainingIdleSeconds,

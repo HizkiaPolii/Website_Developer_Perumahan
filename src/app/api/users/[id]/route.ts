@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -15,10 +15,11 @@ export async function DELETE(
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const userId = params.id;
+    const { id: userId } = await context.params;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
     // Delete user dari backend
-    const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+    const response = await fetch(`${apiUrl}/api/users/${userId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -49,7 +50,7 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -62,11 +63,12 @@ export async function PUT(
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const userId = params.id;
+    const { id: userId } = await context.params;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const body = await request.json();
 
     // Update user di backend
-    const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+    const response = await fetch(`${apiUrl}/api/users/${userId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

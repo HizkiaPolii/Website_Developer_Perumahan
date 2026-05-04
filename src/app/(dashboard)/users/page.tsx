@@ -2,99 +2,64 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { useConfirmDialog } from "@/contexts/ConfirmDialogContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUsers } from "@/hooks/useApiEndpoints";
 
 type Role = "Admin" | "Marketing" | "Manager" | "Owner";
 
 interface User {
-  id: string;
+  id: string | number;
   name: string;
   email: string;
   role: Role;
   joinDate?: string;
-  status: "Aktif" | "Nonaktif";
   phone?: string;
 }
 
 export default function UsersPage() {
   const router = useRouter();
+  const { user: currentUser, isLoading: isAuthLoading } = useAuth();
+  const { getAll, delete: deleteUser, update: updateUser, loading, error: hookError } = useUsers();
+  
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filterRole, setFilterRole] = useState<Role | "All">("All");
   const { addToast } = useToast();
   const { confirm } = useConfirmDialog();
-  const { token } = useAuth();
 
-  // Fetch users dari backend
+  // Fetch users when user is loaded
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        
-        if (!token) {
-          setError("Token tidak ditemukan. Silakan login kembali.");
-          setLoading(false);
-          return;
-        }
+    if (isAuthLoading || !currentUser) return;
 
-        console.log("📡 Fetching users from backend...");
-        
-        const response = await fetch("http://localhost:5000/api/users", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        
-        console.log("📡 Response status:", response.status);
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.warn("❌ API error:", response.status, errorData);
-          setError(errorData.message || "Gagal mengambil data users");
-          setUsers([]);
-          setLoading(false);
-          return;
-        }
-        
-        const data = await response.json();
-        
-        // Backend format: { success, message, data: [...] }
-        if (data.data && Array.isArray(data.data)) {
-          console.log("✅ Users fetched:", data.data.length, "users");
-          // Normalize roles to capitalized format (admin -> Admin)
-          const normalizedUsers = data.data.map((user: any) => ({
+    const loadUsers = async () => {
+      try {
+        const data = await getAll();
+        if (data && data.length > 0) {
+          const normalizedUsers = data.map((user: any) => ({
             ...user,
-            role: user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase(),
+            role: user.role?.charAt(0).toUpperCase() + user.role?.slice(1).toLowerCase() || "User",
             joinDate: user.joinDate || user.createdAt || "-"
           }));
           setUsers(normalizedUsers);
-          setError(null);
+          addToast(`${data.length} users berhasil dimuat`, 'success');
         } else {
-          console.warn("⚠️  Invalid response format");
           setUsers([]);
-          setError("Format data tidak valid");
         }
       } catch (err) {
-        console.error("❌ Fetch error:", err);
-        setError("Gagal terhubung ke server");
-        setUsers([]);
-      } finally {
-        setLoading(false);
+        console.error('Error loading users:', err);
+        addToast('Gagal memuat users', 'error');
       }
     };
 
-    fetchUsers();
-  }, [token]);
+    loadUsers();
+  }, [getAll, currentUser, isAuthLoading, addToast]);
 
 
 
-  const handleDeleteUser = async (id: string) => {
+
+  const handleDeleteUser = async (id: string | number) => {
     const user = users.find(u => u.id === id);
     if (!user) return;
 
@@ -109,71 +74,17 @@ export default function UsersPage() {
     if (!confirmed) return;
 
     try {
-      if (!token) {
-        addToast("❌ Token tidak ditemukan", "error");
-        return;
+      const success = await deleteUser(id as number);
+
+      if (success) {
+        setUsers(users.filter(u => u.id !== id));
+        addToast(`✓ User ${user.name} berhasil dihapus`, "success");
+      } else {
+        addToast(`❌ Gagal menghapus user`, "error");
       }
-
-      const response = await fetch(`http://localhost:5000/api/users/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        addToast(`❌ ${data.message || "Gagal menghapus user"}`, "error", 3000);
-        return;
-      }
-
-      setUsers(users.filter(u => u.id !== id));
-      addToast(`✓ User ${user.name} berhasil dihapus`, "success", 3000);
     } catch (err) {
       console.error("Delete user error:", err);
-      addToast("❌ Terjadi kesalahan saat menghapus user", "error", 3000);
-    }
-  };
-
-  const handleToggleStatus = async (id: string) => {
-    const user = users.find(u => u.id === id);
-    if (!user) return;
-
-    const newStatus = user.status === "Aktif" ? "Nonaktif" : "Aktif";
-
-    try {
-      if (!token) {
-        addToast("❌ Token tidak ditemukan", "error");
-        return;
-      }
-
-      const response = await fetch(`http://localhost:5000/api/users/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        addToast(`❌ ${data.message || "Gagal mengubah status"}`, "error", 3000);
-        return;
-      }
-
-      setUsers(users.map(u => 
-        u.id === id 
-          ? { ...u, status: newStatus }
-          : u
-      ));
-      addToast(`✓ User ${user.name} status berubah menjadi ${newStatus}`, "info", 3000);
-    } catch (err) {
-      console.error("Toggle status error:", err);
-      addToast("❌ Terjadi kesalahan saat mengubah status", "error", 3000);
+      addToast("❌ Terjadi kesalahan saat menghapus user", "error");
     }
   };
 
@@ -204,23 +115,23 @@ export default function UsersPage() {
     return icons[role];
   };
 
-  if (loading) {
+  if (isAuthLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">⏳</div>
-          <p className="text-slate-600">Mengambil data users...</p>
+          <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500" />
+          <p className="text-slate-600 mt-2">Mengambil data users...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (hookError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="text-4xl mb-4">❌</div>
-          <p className="text-red-600 font-bold">{error}</p>
+          <p className="text-red-600 font-bold">{hookError}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
@@ -263,8 +174,6 @@ export default function UsersPage() {
         <StatCard label="Manager" value={safeUsers.filter(u => u.role === "Manager").length.toString()} icon="👔" />
         <StatCard label="Owner" value={safeUsers.filter(u => u.role === "Owner").length.toString()} icon="👑" />
       </div>
-
-
 
       {/* Filter */}
       <div className="bg-white rounded-lg border border-slate-200 p-4">

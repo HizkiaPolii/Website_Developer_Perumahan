@@ -1,15 +1,16 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Loader } from "lucide-react";
-import { useToast } from "@/contexts/ToastContext";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { ArrowLeft, Loader } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers } from '@/hooks/useApiEndpoints';
 
-type Role = "Admin" | "Marketing" | "Manager" | "Owner";
+type Role = 'Admin' | 'Marketing' | 'Manager' | 'Owner';
 
 interface User {
-  id: string;
+  id: string | number;
   name: string;
   email: string;
   phone?: string;
@@ -20,60 +21,54 @@ export default function EditUserPage() {
   const router = useRouter();
   const params = useParams();
   const { addToast } = useToast();
-  const { token } = useAuth();
+  const { user: currentUser, isLoading: isAuthLoading } = useAuth();
+  const { getById, update, loading: apiLoading } = useUsers();
+  
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    role: "Marketing" as Role,
+    name: '',
+    email: '',
+    phone: '',
+    role: 'Marketing' as Role,
   });
 
   const userId = params.id as string;
 
   // Fetch user data
   useEffect(() => {
+    if (isAuthLoading) return;
+
     const fetchUser = async () => {
       try {
-        if (!token) return;
-
-        const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          addToast("❌ Gagal mengambil data user", "error");
-          router.back();
+        const data = await getById(parseInt(userId));
+        if (!data) {
+          addToast('❌ User tidak ditemukan', 'error');
+          router.push('/users');
           return;
         }
 
-        const data = await response.json();
-        const user = data.data;
-
         // Capitalize role: "manager" -> "Manager"
-        const capitalizedRole = (user.role.charAt(0).toUpperCase() + user.role.slice(1)) as Role;
+        const capitalizedRole =
+          (data.role?.charAt(0).toUpperCase() + data.role?.slice(1).toLowerCase()) as Role || 'Marketing';
 
         setFormData({
-          name: user.name,
-          email: user.email,
-          phone: user.phone || "",
+          name: data.name,
+          email: data.email,
+          phone: data.phone || '',
           role: capitalizedRole,
         });
       } catch (err) {
-        console.error("Fetch user error:", err);
-        addToast("❌ Terjadi kesalahan saat mengambil data", "error");
-        router.back();
+        console.error('Fetch user error:', err);
+        addToast('❌ Terjadi kesalahan saat mengambil data', 'error');
+        router.push('/users');
       } finally {
         setPageLoading(false);
       }
     };
 
     fetchUser();
-  }, [userId, token, router, addToast]);
+  }, [userId, isAuthLoading, getById, addToast, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -87,57 +82,42 @@ export default function EditUserPage() {
     e.preventDefault();
 
     if (!formData.name || !formData.email || !formData.phone) {
-      addToast("⚠️ Mohon isi semua field yang diperlukan", "warning", 3000);
+      addToast('⚠️ Mohon isi semua field yang diperlukan', 'warning');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      addToast("⚠️ Format email tidak valid (contoh: nama@domain.com)", "warning", 3000);
+      addToast('⚠️ Format email tidak valid (contoh: nama@domain.com)', 'warning');
       return;
     }
 
     try {
       setLoading(true);
 
-      if (!token) {
-        addToast("❌ Token tidak ditemukan", "error");
-        return;
-      }
-
-      const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role.toLowerCase(), // Convert to lowercase untuk konsistensi
-        }),
+      const result = await update(parseInt(userId), {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        role: formData.role.toLowerCase(), // Convert to lowercase untuk konsistensi
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        addToast(`❌ ${data.message || "Gagal mengupdate user"}`, "error", 3000);
-        return;
+      if (result) {
+        addToast(`✓ User ${formData.name} berhasil diperbarui`, 'success');
+        router.push('/users');
+      } else {
+        addToast('❌ Gagal menyimpan perubahan', 'error');
       }
-
-      addToast(`✓ User ${formData.name} berhasil diperbarui`, "success", 3000);
-      router.push("/users");
     } catch (err) {
-      console.error("Update user error:", err);
-      addToast("❌ Terjadi kesalahan saat mengupdate user", "error", 3000);
+      console.error('Update user error:', err);
+      addToast('❌ Terjadi kesalahan saat mengupdate user', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  if (pageLoading) {
+  if (isAuthLoading || pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-3">
@@ -153,7 +133,7 @@ export default function EditUserPage() {
       {/* Header */}
       <div className="flex items-start sm:items-center gap-3 sm:gap-4 animate-slide-in-down">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push('/users')}
           className="p-2 hover:bg-slate-100 rounded-lg transition-all duration-200 hover:scale-110 shrink-0"
         >
           <ArrowLeft className="w-5 h-5 text-slate-600" />
@@ -168,7 +148,7 @@ export default function EditUserPage() {
       <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 md:p-8 shadow-sm animate-slide-in-up">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Nama */}
-          <div className="animate-slide-in-up" style={{animationDelay: '50ms'}}>
+          <div className="animate-slide-in-up" style={{ animationDelay: '50ms' }}>
             <label className="block text-xs sm:text-sm font-semibold text-slate-900 mb-2">
               👤 Nama Lengkap *
             </label>
@@ -183,7 +163,7 @@ export default function EditUserPage() {
           </div>
 
           {/* Email (Read-only) */}
-          <div className="animate-slide-in-up" style={{animationDelay: '75ms'}}>
+          <div className="animate-slide-in-up" style={{ animationDelay: '75ms' }}>
             <label className="block text-xs sm:text-sm font-semibold text-slate-900 mb-2">
               📧 Email (Tidak dapat diubah)
             </label>
@@ -196,7 +176,7 @@ export default function EditUserPage() {
           </div>
 
           {/* Phone */}
-          <div className="animate-slide-in-up" style={{animationDelay: '100ms'}}>
+          <div className="animate-slide-in-up" style={{ animationDelay: '100ms' }}>
             <label className="block text-xs sm:text-sm font-semibold text-slate-900 mb-2">
               📱 No. Telepon *
             </label>
@@ -211,7 +191,7 @@ export default function EditUserPage() {
           </div>
 
           {/* Role */}
-          <div className="animate-slide-in-up" style={{animationDelay: '125ms'}}>
+          <div className="animate-slide-in-up" style={{ animationDelay: '125ms' }}>
             <label className="block text-xs sm:text-sm font-semibold text-slate-900 mb-2">
               👔 Role *
             </label>
@@ -229,27 +209,27 @@ export default function EditUserPage() {
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 animate-slide-in-up" style={{animationDelay: '150ms'}}>
+          <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 animate-slide-in-up" style={{ animationDelay: '150ms' }}>
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push('/users')}
               className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-slate-300 text-slate-900 font-semibold rounded-lg hover:bg-slate-50 transition-all duration-200 text-sm hover:scale-105 active:scale-95"
             >
               ← Batal
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || apiLoading}
               className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm hover:scale-105 active:scale-95"
             >
-              {loading ? (
+              {loading || apiLoading ? (
                 <>
                   <Loader className="w-4 h-4 animate-spin" />
                   <span className="hidden sm:inline">Menyimpan...</span>
                   <span className="sm:hidden">Simpan...</span>
                 </>
               ) : (
-                "✓ Simpan Perubahan"
+                '✓ Simpan Perubahan'
               )}
             </button>
           </div>

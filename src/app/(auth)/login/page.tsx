@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function LoginPage() {
   const router = useRouter();
   const { addToast } = useToast();
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { loginWithCredentials, isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -17,7 +17,9 @@ export default function LoginPage() {
 
   // Redirect ke dashboard jika sudah login
   useEffect(() => {
+    console.log("🔍 Login page - checking auth:", { isLoading, isAuthenticated });
     if (!isLoading && isAuthenticated) {
+      console.log("✅ User authenticated - redirecting to dashboard");
       router.replace("/");
     }
   }, [isAuthenticated, isLoading, router]);
@@ -27,24 +29,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await loginWithCredentials(email, password);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        addToast(data.message || "Email atau password salah", "error");
+      if (!result.success) {
+        addToast(result.error || "Email atau password salah", "error");
         setLoading(false);
         return;
       }
-
-      // Gunakan AuthContext untuk save session
-      login(data.token, data.user);
 
       addToast("Login berhasil! Mengarahkan...", "success");
       setTimeout(() => {

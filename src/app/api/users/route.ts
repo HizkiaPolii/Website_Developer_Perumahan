@@ -12,9 +12,10 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
     // Fetch users dari backend
-    const response = await fetch('http://localhost:5000/api/users', {
+    const response = await fetch(`${apiUrl}/api/users`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -57,10 +58,11 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const body = await request.json();
 
     // Create user di backend
-    const response = await fetch('http://localhost:5000/api/users', {
+    const response = await fetch(`${apiUrl}/api/users`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

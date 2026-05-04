@@ -1,79 +1,92 @@
-import { ArrowLeft, Trash2, Edit2, Plus } from 'lucide-react';
-import Link from 'next/link';
+'use client';
 
-interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  category: string;
-  type: 'pendapatan' | 'pengeluaran';
-  amount: number;
-  status: 'pending' | 'completed';
-}
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Trash2, Edit2, Plus, Loader } from 'lucide-react';
+import Link from 'next/link';
+import { useTransactions } from '@/hooks/useApiEndpoints';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency, formatDate } from '@/utils/financial-constants';
+import { useToast } from '@/contexts/ToastContext';
 
 export default function TransactionsPage() {
-  // Data dummy transaksi
-  const transactions: Transaction[] = [
-    {
-      id: '1',
-      date: '2026-04-28',
-      description: 'Penjualan Produk A',
-      category: 'Penjualan',
-      type: 'pendapatan',
-      amount: 5000000,
-      status: 'completed',
-    },
-    {
-      id: '2',
-      date: '2026-04-27',
-      description: 'Gaji Karyawan',
-      category: 'Gaji & Upah',
-      type: 'pengeluaran',
-      amount: 20000000,
-      status: 'completed',
-    },
-    {
-      id: '3',
-      date: '2026-04-26',
-      description: 'Biaya Sewa Kantor',
-      category: 'Sewa',
-      type: 'pengeluaran',
-      amount: 10000000,
-      status: 'pending',
-    },
-    {
-      id: '4',
-      date: '2026-04-25',
-      description: 'Penjualan Produk B',
-      category: 'Penjualan',
-      type: 'pendapatan',
-      amount: 3000000,
-      status: 'completed',
-    },
-  ];
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { getAll, loading, error } = useTransactions();
+  const { addToast } = useToast();
+  
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(value);
+  // Fetch transactions when user is loaded
+  useEffect(() => {
+    if (isAuthLoading || !user) return;
+
+    const loadTransactions = async () => {
+      try {
+        const data = await getAll();
+        if (data && data.length > 0) {
+          setTransactions(data);
+          addToast(`${data.length} transaksi berhasil dimuat`, 'success');
+        } else {
+          setTransactions([]);
+        }
+      } catch (err) {
+        console.error('Error loading transactions:', err);
+        addToast('Gagal memuat transaksi', 'error');
+      }
+    };
+
+    loadTransactions();
+  }, [getAll, user, isAuthLoading, addToast]);
+
+  // Filter transactions based on search and filters
+  useEffect(() => {
+    let filtered = transactions;
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (tx) =>
+          tx.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          tx.referenceNo?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (typeFilter) {
+      filtered = filtered.filter((tx) => tx.transactionType === typeFilter);
+    }
+
+    if (categoryFilter) {
+      filtered = filtered.filter((tx) => tx.category === categoryFilter);
+    }
+
+    setFilteredTransactions(filtered);
+  }, [transactions, searchTerm, typeFilter, categoryFilter]);
+
+  const handleDelete = (id: number) => {
+    if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+      addToast('Transaksi berhasil dihapus', 'success');
+    }
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('id-ID', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  if (isAuthLoading || loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500" />
+          <p className="text-black mt-2">Memuat data transaksi...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="hover:bg-gray-100 p-2 rounded">
+          <Link href="/" className="hover:bg-gray-100 p-2 rounded">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
@@ -81,10 +94,13 @@ export default function TransactionsPage() {
             <p className="text-sm text-black mt-1">Kelola semua transaksi keuangan</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+        <Link
+          href="/transactions/add"
+          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
           <Plus className="w-5 h-5" />
           Transaksi Baru
-        </button>
+        </Link>
       </div>
 
       {/* Filter & Search */}
@@ -92,20 +108,37 @@ export default function TransactionsPage() {
         <input
           type="text"
           placeholder="Cari transaksi..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1 px-4 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
-        <select className="px-4 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-4 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
           <option value="">Semua Jenis</option>
-          <option value="pendapatan">Pendapatan</option>
-          <option value="pengeluaran">Pengeluaran</option>
+          <option value="PENDAPATAN">Pendapatan</option>
+          <option value="PENGELUARAN">Pengeluaran</option>
         </select>
-        <select className="px-4 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="px-4 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
           <option value="">Semua Kategori</option>
-          <option value="penjualan">Penjualan</option>
-          <option value="gaji">Gaji & Upah</option>
-          <option value="sewa">Sewa</option>
+          <option value="Penjualan">Penjualan</option>
+          <option value="Gaji">Gaji & Upah</option>
+          <option value="Sewa">Sewa</option>
         </select>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       {/* Tabel Transaksi */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -123,40 +156,66 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((tx, index) => (
-                <tr key={tx.id} className={index !== transactions.length - 1 ? 'border-b' : ''}>
-                  <td className="px-6 py-4 text-sm text-black">{formatDate(tx.date)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-black">{tx.description}</td>
-                  <td className="px-6 py-4 text-sm text-black">{tx.category}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`font-semibold ${tx.type === 'pendapatan' ? 'text-green-600' : 'text-red-600'}`}>
-                      {tx.type === 'pendapatan' ? '+ Pendapatan' : '- Pengeluaran'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-black">
-                    {formatCurrency(tx.amount)}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      tx.status === 'completed'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {tx.status === 'completed' ? 'Selesai' : 'Pending'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-2 hover:bg-blue-50 rounded text-blue-600 transition-colors" title="Edit">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 hover:bg-red-50 rounded text-red-600 transition-colors" title="Hapus">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map((tx, index) => (
+                  <tr key={tx.id} className={index !== filteredTransactions.length - 1 ? 'border-b' : ''}>
+                    <td className="px-6 py-4 text-sm text-black">{formatDate(tx.transactionDate)}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-black">{tx.description}</td>
+                    <td className="px-6 py-4 text-sm text-black">{tx.category || '-'}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span
+                        className={`font-semibold ${
+                          tx.transactionType === 'PENDAPATAN' ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {tx.transactionType === 'PENDAPATAN' ? '+ Pendapatan' : '- Pengeluaran'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold text-black">
+                      {formatCurrency(tx.amount)}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          tx.status === 'POSTED'
+                            ? 'bg-green-100 text-green-700'
+                            : tx.status === 'APPROVED'
+                            ? 'bg-blue-100 text-blue-700'
+                            : tx.status === 'REJECTED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}
+                      >
+                        {tx.status || 'DRAFT'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <Link
+                          href={`/transactions/${tx.id}/edit`}
+                          className="p-2 hover:bg-blue-50 rounded text-blue-600 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(tx.id)}
+                          className="p-2 hover:bg-red-50 rounded text-red-600 transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    {transactions.length === 0 ? 'Tidak ada transaksi' : 'Tidak ada hasil pencarian'}
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

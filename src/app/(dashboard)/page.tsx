@@ -2,181 +2,108 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
-
-interface FinancialStats {
-  totalPendapatan: number;
-  totalPengeluaran: number;
-  labaBersih: number;
-  saldoKas: number;
-}
-
-interface RecentTransaction {
-  id: string;
-  date: string;
-  description: string;
-  type: "pendapatan" | "pengeluaran";
-  amount: number;
-}
+import { TrendingUp, TrendingDown, DollarSign, Activity, Loader } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDashboard } from "@/hooks/useApiEndpoints";
+import { DashboardStats } from "@/types/financial-system";
+import { formatCurrency, formatDate } from "@/utils/financial-constants";
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<FinancialStats | null>(null);
-  const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // Mock data untuk development
-  const mockStats: FinancialStats = {
-    totalPendapatan: 150000000,
-    totalPengeluaran: 95000000,
-    labaBersih: 55000000,
-    saldoKas: 65000000,
-  };
-
-  const mockTransactions: RecentTransaction[] = [
-    {
-      id: "1",
-      date: "2026-04-28",
-      description: "Penjualan Produk A",
-      type: "pendapatan",
-      amount: 5000000,
-    },
-    {
-      id: "2",
-      date: "2026-04-27",
-      description: "Gaji Karyawan",
-      type: "pengeluaran",
-      amount: 20000000,
-    },
-    {
-      id: "3",
-      date: "2026-04-26",
-      description: "Biaya Sewa Kantor",
-      type: "pengeluaran",
-      amount: 10000000,
-    },
-    {
-      id: "4",
-      date: "2026-04-25",
-      description: "Penjualan Produk B",
-      type: "pendapatan",
-      amount: 3000000,
-    },
-  ];
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { getStats, getRecentTransactions, loading, error } = useDashboard();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    // Wait until auth is loaded and user exists
+    if (isAuthLoading || !user) {
+      console.log('Waiting for auth...');
+      return;
+    }
+
+    console.log('User loaded, fetching dashboard data...');
+    
+    const loadDashboardData = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const [statsData, txData] = await Promise.all([
+          getStats(),
+          getRecentTransactions()
+        ]);
 
-        if (!token) {
-          setError("Token tidak ditemukan. Silakan login kembali.");
-          setLoading(false);
-          return;
-        }
-
-        // TODO: Replace with actual API endpoint
-        const response = await fetch("/api/dashboard/financial-stats", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          console.warn("API /api/dashboard/financial-stats tidak tersedia, menggunakan mock data");
-          setStats(mockStats);
-          setTransactions(mockTransactions);
-          setLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-        setStats(data);
+        if (statsData) setStats(statsData);
+        if (txData) setTransactions(txData);
       } catch (err) {
-        console.warn("Gagal fetch dari API, menggunakan mock data:", err);
-        setStats(mockStats);
-        setTransactions(mockTransactions);
-      } finally {
-        setLoading(false);
+        console.error("Error loading dashboard:", err);
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    loadDashboardData();
+  }, [getStats, getRecentTransactions, user, isAuthLoading]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  if (isAuthLoading || loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500" />
+          <p className="text-black mt-2">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <strong>Error:</strong> {error}
+        <details className="mt-2 text-sm">
+          <summary>Debug info</summary>
+          <pre className="bg-red-100 p-2 mt-1 text-xs overflow-auto">
+            Check browser console for more details
+          </pre>
+        </details>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-black">Dashboard Keuangan</h1>
-        <p className="text-black mt-2">Ringkasan Pengelolaan Keuangan Perusahaan Bulan Ini</p>
+        <p className="text-black mt-2">Ringkasan Pengelolaan Keuangan Perusahaan</p>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* Loading State */}
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin">⌛</div>
-            <p className="text-black mt-2">Loading dashboard data...</p>
-          </div>
-        </div>
-      )}
-
       {/* Stats Cards */}
-      {stats && !loading && (
+      {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={<TrendingUp className="w-6 h-6" />}
-            label="Total Pendapatan"
-            value={formatCurrency(stats.totalPendapatan)}
+            label="Total Revenue"
+            value={formatCurrency(stats.totalRevenue)}
             color="bg-green-50 border-green-200"
             textColor="text-green-600"
             accentColor="bg-green-500"
           />
           <StatCard
             icon={<TrendingDown className="w-6 h-6" />}
-            label="Total Pengeluaran"
-            value={formatCurrency(stats.totalPengeluaran)}
+            label="Total Expense"
+            value={formatCurrency(stats.totalExpense)}
             color="bg-red-50 border-red-200"
             textColor="text-red-600"
             accentColor="bg-red-500"
           />
           <StatCard
             icon={<DollarSign className="w-6 h-6" />}
-            label="Laba Bersih"
-            value={formatCurrency(stats.labaBersih)}
+            label="Net Profit"
+            value={formatCurrency(stats.netProfit)}
             color="bg-blue-50 border-blue-200"
             textColor="text-blue-600"
             accentColor="bg-blue-500"
           />
           <StatCard
             icon={<Activity className="w-6 h-6" />}
-            label="Saldo Kas"
-            value={formatCurrency(stats.saldoKas)}
+            label="Total Assets"
+            value={formatCurrency(stats.totalAssets)}
             color="bg-purple-50 border-purple-200"
             textColor="text-purple-600"
             accentColor="bg-purple-500"
@@ -198,22 +125,22 @@ export default function DashboardPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-black">Tanggal</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-black">Deskripsi</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-black">Jenis</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-black">Tipe</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-black">Jumlah</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.map((tx, index) => (
                   <tr key={tx.id} className={index !== transactions.length - 1 ? "border-b" : ""}>
-                    <td className="px-6 py-3 text-sm text-black">{formatDate(tx.date)}</td>
+                    <td className="px-6 py-3 text-sm text-black">{formatDate(tx.transactionDate)}</td>
                     <td className="px-6 py-3 text-sm text-black font-medium">{tx.description}</td>
                     <td className="px-6 py-3 text-sm">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        tx.type === "pendapatan"
+                        tx.transactionType === "PENDAPATAN"
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
                       }`}>
-                        {tx.type === "pendapatan" ? "Pendapatan" : "Pengeluaran"}
+                        {tx.transactionType === "PENDAPATAN" ? "Pendapatan" : "Pengeluaran"}
                       </span>
                     </td>
                     <td className="px-6 py-3 text-sm text-right font-semibold text-black">
@@ -224,77 +151,38 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
-          <div className="p-4 border-t border-slate-200 text-center">
-            <Link
-              href="/dashboard/transactions"
-              className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-            >
-              Lihat Semua Transaksi →
-            </Link>
-          </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Links */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h3 className="font-bold text-black mb-4">⚡ Akses Cepat</h3>
-            <div className="space-y-3">
-              <Link
-                href="/dashboard/finances"
-                className="block p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-sm font-semibold text-indigo-700 transition-colors text-center"
-              >
-                Pengelolaan Keuangan
-              </Link>
-              <Link
-                href="/dashboard/reports/balance-sheet"
-                className="block p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-semibold text-blue-700 transition-colors text-center"
-              >
-                Laporan Neraca
-              </Link>
-              <Link
-                href="/dashboard/reports/income-statement"
-                className="block p-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm font-semibold text-green-700 transition-colors text-center"
-              >
-                Laporan Laba Rugi
-              </Link>
-              <Link
-                href="/dashboard/reports/archive"
-                className="block p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm font-semibold text-purple-700 transition-colors text-center"
-              >
-                Pengarsipan Laporan
-              </Link>
-            </div>
-          </div>
-
-          {/* Summary Info */}
-          <div className="bg-linear-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200 shadow-sm p-6">
-            <h3 className="font-bold text-black mb-4">📊 Info Bulan Ini</h3>
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-black text-xs uppercase font-bold">Rasio Keuntungan</p>
-                <p className="text-black font-semibold mt-1">
-                  {stats ? ((stats.labaBersih / stats.totalPendapatan) * 100).toFixed(1) : 0}%
-                </p>
-              </div>
-              <div className="border-t border-indigo-300 pt-3">
-                <p className="text-black text-xs uppercase font-bold">Periode</p>
-                <p className="text-black font-semibold mt-1">April 2026</p>
-              </div>
-            </div>
-          </div>
+        {/* Quick Links */}
+        <div className="space-y-4">
+          <Link
+            href="/transactions"
+            className="block p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl hover:shadow-md transition-all"
+          >
+            <h3 className="font-semibold text-blue-900">📊 Transaksi</h3>
+            <p className="text-xs text-blue-700 mt-1">Kelola transaksi keuangan</p>
+          </Link>
+          <Link
+            href="/chart-of-accounts"
+            className="block p-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl hover:shadow-md transition-all"
+          >
+            <h3 className="font-semibold text-purple-900">📁 Akun</h3>
+            <p className="text-xs text-purple-700 mt-1">Kelola Chart of Accounts</p>
+          </Link>
+          <Link
+            href="/reports/balance-sheet"
+            className="block p-4 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl hover:shadow-md transition-all"
+          >
+            <h3 className="font-semibold text-green-900">📈 Laporan</h3>
+            <p className="text-xs text-green-700 mt-1">Lihat laporan keuangan</p>
+          </Link>
         </div>
-      </div>
-
-      {/* Info Note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-black">
-        💡 <strong>Info:</strong> Dashboard ini terhubung ke backend API untuk data keuangan real-time. Pastikan server
-        backend berjalan untuk menampilkan data sebenarnya.
       </div>
     </div>
   );
 }
 
+// StatCard Component
 function StatCard({
   icon,
   label,
@@ -311,11 +199,13 @@ function StatCard({
   accentColor: string;
 }) {
   return (
-    <div className={`${color} border rounded-lg p-6 flex items-center gap-4`}>
-      <div className={`${accentColor} p-3 rounded-lg text-white`}>{icon}</div>
+    <div className={`${color} border rounded-xl p-4 flex items-start justify-between`}>
       <div>
-        <p className="text-xs text-black uppercase font-bold tracking-wider">{label}</p>
-        <p className={`text-2xl font-bold ${textColor}`}>{value}</p>
+        <p className="text-sm text-slate-600">{label}</p>
+        <p className={`text-2xl font-bold mt-2 ${textColor}`}>{value}</p>
+      </div>
+      <div className={`${accentColor} text-white p-2 rounded-lg`}>
+        {icon}
       </div>
     </div>
   );

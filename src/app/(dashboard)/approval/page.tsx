@@ -4,472 +4,429 @@ import React, { useState, useEffect } from "react";
 import { useToast } from "@/contexts/ToastContext";
 import { useConfirmDialog } from "@/contexts/ConfirmDialogContext";
 
-type Role = "Admin" | "Marketing" | "Manager" | "Owner";
+type Role = "Admin" | "Manager" | "Owner";
 type Status = "Pending" | "ACC Manager" | "ACC Final" | "Tolak";
 
-interface Booking {
+interface PurchaseRequest {
   id: string;
-  buyer: string;
-  unitId: string;
-  phone: string;
-  status: Status;
-  marketing: string;
+  item: string;
+  quantity: string;
+  amount: number;
+  requester: string;
+  department: string;
   date: string;
-  email: string;
+  status: Status;
+  description: string;
+  notaNumber?: string;
 }
 
 export default function ApprovalPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [role, setRole] = useState<Role>("Manager");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const { addToast } = useToast();
   const { confirm } = useConfirmDialog();
 
-  // Mock data untuk development
-  const mockBookings: Booking[] = [
-    { id: "BK001", buyer: "John Doe", unitId: "1", phone: "081234567890", status: "Pending", marketing: "Ahmad", date: "2025-01-15", email: "john@example.com" },
-    { id: "BK002", buyer: "Jane Smith", unitId: "2", phone: "081234567891", status: "ACC Manager", marketing: "Budi", date: "2025-01-16", email: "jane@example.com" },
+  // Mock data untuk pengadaan barang
+  const mockRequests: PurchaseRequest[] = [
+    { 
+      id: "PR-2024-001", 
+      item: "Semen Tiga Roda", 
+      quantity: "50 Sak", 
+      amount: 3250000, 
+      requester: "Eko (Logistik)", 
+      department: "Pembangunan Tahap 1", 
+      date: "2024-05-01", 
+      status: "Pending",
+      description: "Kebutuhan pengecoran pondasi blok A"
+    },
+    { 
+      id: "PR-2024-002", 
+      item: "Besi 10mm", 
+      quantity: "100 Batang", 
+      amount: 8500000, 
+      requester: "Budi (Site Manager)", 
+      department: "Pembangunan Tahap 2", 
+      date: "2024-05-02", 
+      status: "ACC Manager",
+      description: "Penambahan stok besi untuk kolom",
+      notaNumber: "NTA-5521"
+    },
+    { 
+      id: "PR-2024-003", 
+      item: "Pasir Cor", 
+      quantity: "2 Truk", 
+      amount: 4000000, 
+      requester: "Eko (Logistik)", 
+      department: "Pembangunan Tahap 1", 
+      date: "2024-04-28", 
+      status: "ACC Final",
+      description: "Pasir untuk plester dinding",
+      notaNumber: "NTA-5510"
+    },
   ];
 
-  // Fetch bookings dari API
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        
-        if (!token) {
-          setError("Token tidak ditemukan. Silakan login kembali.");
-          setLoading(false);
-          return;
-        }
-
-        // TODO: Replace dengan endpoint API yang sebenarnya
-        const response = await fetch("/api/bookings", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        
-        if (!response.ok) {
-          console.warn("API /api/bookings tidak tersedia, menggunakan mock data");
-          setBookings(mockBookings);
-        } else {
-          const data = await response.json();
-          setBookings(data);
-        }
-
-        // Get role dari localStorage (disimpan saat login)
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          try {
-            const userData = JSON.parse(storedUser);
-            if (userData.role && ["Manager", "Owner"].includes(userData.role)) {
-              setRole(userData.role);
-            }
-          } catch (err) {
-            console.warn("Gagal parse user data:", err);
+    // Simulasi fetch data
+    const timer = setTimeout(() => {
+      setRequests(mockRequests);
+      setLoading(false);
+      
+      // Get role dari localStorage jika ada
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          if (["Manager", "Owner"].includes(userData.role)) {
+            setRole(userData.role);
           }
-        }
-      } catch (err) {
-        console.warn("Gagal fetch dari API, menggunakan mock data:", err);
-        setBookings(mockBookings);
-      } finally {
-        setLoading(false);
+        } catch (e) {}
       }
-    };
-    fetchData();
+    }, 800);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleApprove = async (id: string, nextStatus: Status) => {
-    const booking = bookings.find(b => b.id === id);
-    if (!booking) return;
+    const request = requests.find(r => r.id === id);
+    if (!request) return;
 
     const isReject = nextStatus === "Tolak";
-    const title = isReject ? "Reject Booking?" : role === "Manager" ? "Approve untuk Manager?" : "Final Approval?";
+    const title = isReject ? "Tolak Pengajuan?" : role === "Manager" ? "Approve & Buat Nota?" : "Final Approval Direktur?";
     const message = isReject 
-      ? `Apakah Anda yakin ingin menolak booking ${booking.id} atas nama ${booking.buyer}?`
-      : `Apakah Anda yakin ingin ${role === "Manager" ? "approve" : "final approve"} booking ${booking.id} atas nama ${booking.buyer}?`;
+      ? `Apakah Anda yakin ingin menolak pengajuan ${request.item} dari ${request.requester}?`
+      : role === "Manager" 
+        ? `Approve pengajuan ${request.item}. Sistem akan menggenerate nomor nota otomatis untuk diajukan ke Direktur.`
+        : `Memberikan persetujuan akhir untuk pembayaran dan proses pengadaan ${request.item}.`;
 
     const confirmed = await confirm({
       title,
       message,
-      confirmText: isReject ? "Ya, Tolak" : "Ya, Approve",
+      confirmText: isReject ? "Ya, Tolak" : "Ya, Setujui",
       cancelText: "Batal",
-      type: isReject ? "danger" : "warning"
+      type: isReject ? "danger" : "success"
     });
 
     if (!confirmed) return;
 
-    // TODO: Send approval ke API endpoint /api/bookings/{id}/approve
-    // Update state locally untuk UI feedback
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: nextStatus } : b));
+    // Local update
+    setRequests(prev => prev.map(r => {
+      if (r.id === id) {
+        const updated = { ...r, status: nextStatus };
+        if (role === "Manager" && nextStatus === "ACC Manager") {
+          updated.notaNumber = `NTA-${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+        return updated;
+      }
+      return r;
+    }));
 
     const toastMessage = isReject 
-      ? `❌ Booking ${booking.id} telah ditolak`
+      ? `❌ Pengajuan ${request.id} ditolak`
       : role === "Manager"
-      ? `✓ Booking ${booking.id} berhasil di-approve Manager`
-      : `✓✓ Booking ${booking.id} berhasil di-approve Final`;
+      ? `✓ Approved! Nota ${request.id} telah dibuat dan diteruskan ke Direktur.`
+      : `✓✓ Berhasil! Pengadaan ${request.item} telah disetujui Direktur.`;
 
     addToast(toastMessage, isReject ? "error" : "success", 3000);
   };
 
-  // Filter berdasarkan role
   const getManagerData = () => {
-    const pending = bookings.filter(b => b.status === "Pending");
-    const completed = bookings.filter(b => b.status === "ACC Manager" || b.status === "Tolak" || b.status === "ACC Final");
-    return { pending, completed };
+    const pending = requests.filter(r => r.status === "Pending");
+    const history = requests.filter(r => r.status !== "Pending");
+    return { pending, history };
   };
 
   const getOwnerData = () => {
-    const pending = bookings.filter(b => b.status === "ACC Manager");
-    const completed = bookings.filter(b => b.status === "ACC Final" || b.status === "Tolak");
-    return { pending, completed };
+    const pending = requests.filter(r => r.status === "ACC Manager");
+    const history = requests.filter(r => r.status === "ACC Final" || r.status === "Tolak");
+    return { pending, history };
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">⏳</div>
-          <p className="text-slate-600">Connecting to API...</p>
-          <p className="text-xs text-slate-400 mt-2">Endpoint: /api/bookings</p>
+        <div className="text-center animate-pulse">
+          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">📝</span>
+          </div>
+          <p className="text-slate-600 font-medium">Memuat data pengajuan...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-4xl mb-4">❌</div>
-          <p className="text-red-600 font-bold">{error}</p>
-          <p className="text-xs text-slate-400 mt-2">Periksa API endpoint: /api/bookings</p>
-        </div>
-      </div>
-    );
-  }
+  const { pending, history } = role === "Manager" ? getManagerData() : getOwnerData();
 
-  const { pending: pendingBookings, completed: completedBookings } = role === "Manager" ? getManagerData() : getOwnerData();
-  
-  // Stats untuk Manager vs Owner berbeda
-  const stats = role === "Manager" 
-    ? {
-        pending: bookings.filter(b => b.status === "Pending").length,
-        processed: bookings.filter(b => b.status === "ACC Manager").length,
-        total: bookings.length,
-        label1: "Pending Approval",
-        label2: "Manager Approved",
-        action: "Manager Approval"
-      }
-    : {
-        pending: bookings.filter(b => b.status === "ACC Manager").length,
-        processed: bookings.filter(b => b.status === "ACC Final").length,
-        total: bookings.length,
-        label1: "Waiting for Owner",
-        label2: "Owner Approved",
-        action: "Owner Final Approval"
-      };
-
-  const getStatusColor = (status: Status) => {
-    const colors = {
-      "Pending": "bg-orange-50 text-orange-600 border-orange-200",
-      "ACC Manager": "bg-indigo-50 text-indigo-600 border-indigo-200",
-      "ACC Final": "bg-emerald-50 text-emerald-600 border-emerald-200",
-      "Tolak": "bg-red-50 text-red-600 border-red-200",
-    };
-    return colors[status];
-  };
-
-  const getStatusIcon = (status: Status) => {
-    const icons = {
-      "Pending": "⏳",
-      "ACC Manager": "✓",
-      "ACC Final": "✓✓",
-      "Tolak": "❌",
-    };
-    return icons[status];
+  const getStatusStyle = (status: Status) => {
+    switch (status) {
+      case "Pending": return "bg-amber-50 text-amber-700 border-amber-200";
+      case "ACC Manager": return "bg-blue-50 text-blue-700 border-blue-200";
+      case "ACC Final": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Tolak": return "bg-red-50 text-red-700 border-red-200";
+    }
   };
 
   return (
-    <div className="space-y-8">
-      {/* API Info */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <p className="text-xs font-bold text-amber-900">🔌 API Status</p>
-        <p className="text-xs text-amber-800 mt-1">Role: {role} | Bookings: {bookings.length}</p>
-        <p className="text-xs text-amber-700 mt-2">Endpoint: GET /api/bookings, POST /api/bookings/{'{id}'}/approve</p>
-      </div>
-
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {role === "Manager" ? "👔 Approval Manager" : "👑 Final Approval Owner"}
-        </h1>
-        <p className="text-slate-500 mt-2">
-          {role === "Manager" 
-            ? "Validasi dan approval pengajuan booking dari tim Marketing - Tahap pertama approval"
-            : "Final approval booking dari hasil validasi Manager - Tahap akhir approval"
-          }
-        </p>
-      </div>
-
-      {/* Stats - Role Specific */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard 
-          icon={role === "Manager" ? "⏳" : "📋"} 
-          label={stats.label1}
-          value={stats.pending.toString()} 
-          color={role === "Manager" ? "bg-orange-50 border-orange-200" : "bg-indigo-50 border-indigo-200"}
-          textColor={role === "Manager" ? "text-orange-600" : "text-indigo-600"}
-        />
-        <StatCard 
-          icon={role === "Manager" ? "✓" : "✓✓"} 
-          label={stats.label2}
-          value={stats.processed.toString()} 
-          color={role === "Manager" ? "bg-indigo-50 border-indigo-200" : "bg-emerald-50 border-emerald-200"}
-          textColor={role === "Manager" ? "text-indigo-600" : "text-emerald-600"}
-        />
-        <StatCard 
-          icon="📊" 
-          label="Total Bookings"
-          value={stats.total.toString()} 
-          color="bg-slate-100 border-slate-200"
-          textColor="text-slate-700"
-        />
-      </div>
-
-      {/* Workflow Info - Role Specific */}
-      {role === "Manager" && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="font-bold text-blue-900 mb-3">📋 Workflow Manager</h3>
-          <p className="text-sm text-blue-800 mb-4">Anda bertugas untuk validasi booking dari tim marketing dan memberikan persetujuan tahap pertama.</p>
-          <div className="flex items-center justify-between text-sm">
-            <div className="text-center">
-              <div className="text-2xl mb-1">1️⃣</div>
-              <p className="font-bold text-slate-900">Booking Masuk</p>
-              <p className="text-xs text-slate-600">Status: Pending</p>
-            </div>
-            <div className="text-blue-400 text-xl">→</div>
-            <div className="text-center">
-              <div className="text-2xl mb-1 bg-emerald-100 rounded-lg p-2 w-fit mx-auto">✓</div>
-              <p className="font-bold text-slate-900">Anda Approve</p>
-              <p className="text-xs text-slate-600">Status: ACC Manager</p>
-            </div>
-            <div className="text-blue-400 text-xl">→</div>
-            <div className="text-center">
-              <div className="text-2xl mb-1">3️⃣</div>
-              <p className="font-bold text-slate-900">Owner Review</p>
-              <p className="text-xs text-slate-600">Final Approval</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {role === "Owner" && (
-        <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
-          <h3 className="font-bold text-purple-900 mb-3">📋 Workflow Owner</h3>
-          <p className="text-sm text-purple-800 mb-4">Anda bertugas untuk memberikan persetujuan final booking yang sudah divalidasi Manager. Setelah approval Anda, booking akan selesai.</p>
-          <div className="flex items-center justify-between text-sm">
-            <div className="text-center">
-              <div className="text-2xl mb-1">1️⃣</div>
-              <p className="font-bold text-slate-900">Manager Approved</p>
-              <p className="text-xs text-slate-600">Status: ACC Manager</p>
-            </div>
-            <div className="text-purple-400 text-xl">→</div>
-            <div className="text-center">
-              <div className="text-2xl mb-1 bg-emerald-100 rounded-lg p-2 w-fit mx-auto">✓✓</div>
-              <p className="font-bold text-slate-900">Anda Approve</p>
-              <p className="text-xs text-slate-600">Status: ACC Final</p>
-            </div>
-            <div className="text-purple-400 text-xl">→</div>
-            <div className="text-center">
-              <div className="text-2xl mb-1">✨</div>
-              <p className="font-bold text-slate-900">Booking Selesai</p>
-              <p className="text-xs text-slate-600">Finalized</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pending Bookings Section - Role Specific */}
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 mb-4">
-          {role === "Manager" 
-            ? `🔄 Booking Pending - Menunggu Validasi Anda (${pendingBookings.length})`
-            : `📋 Manager Approved - Menunggu Final Approval Anda (${pendingBookings.length})`
-          }
-        </h2>
-        
-        {pendingBookings.length > 0 ? (
-          <div className="space-y-4">
-            {pendingBookings.map((booking) => (
-              <div key={booking.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  {/* Top Row - ID, Status, Date */}
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
-                        {booking.id}
-                      </span>
-                      <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${getStatusColor(booking.status)}`}>
-                        {getStatusIcon(booking.status)} {booking.status}
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-500 font-medium">{booking.date}</span>
-                  </div>
-
-                  {/* Main Content - 2 Columns */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    {/* Left - Buyer Info */}
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs uppercase text-slate-500 font-bold tracking-wide">Nama Pembeli</p>
-                        <p className="text-lg font-bold text-slate-900">{booking.buyer}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs uppercase text-slate-500 font-bold">Telepon</p>
-                          <p className="text-sm font-medium text-slate-900">{booking.phone}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase text-slate-500 font-bold">Email</p>
-                          <p className="text-sm font-medium text-slate-900 truncate">{booking.email}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right - Unit & Marketing Info */}
-                    <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs uppercase text-slate-500 font-bold">Unit</p>
-                          <p className="text-lg font-bold text-indigo-600">{booking.unitId}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase text-slate-500 font-bold">Marketing</p>
-                          <p className="text-sm font-medium text-slate-900">{booking.marketing}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons - Role Specific */}
-                  <div className="flex gap-2 pt-4 border-t border-slate-100">
-                    {role === "Manager" && booking.status === "Pending" && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(booking.id, "ACC Manager")}
-                          className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-all shadow-md shadow-emerald-200"
-                        >
-                          ✓ Approve (Manager)
-                        </button>
-                        <button
-                          onClick={() => handleApprove(booking.id, "Tolak")}
-                          className="flex-1 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold rounded-lg transition-all border border-red-200"
-                        >
-                          ❌ Reject
-                        </button>
-                      </>
-                    )}
-                    {role === "Owner" && booking.status === "ACC Manager" && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(booking.id, "ACC Final")}
-                          className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-all shadow-md shadow-emerald-200"
-                        >
-                          ✓✓ Final Approval
-                        </button>
-                        <button
-                          onClick={() => handleApprove(booking.id, "Tolak")}
-                          className="flex-1 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold rounded-lg transition-all border border-red-200"
-                        >
-                          ❌ Reject
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white p-12 rounded-xl border border-slate-200 text-center">
-            <p className="text-lg text-slate-500 font-medium">
-              {role === "Manager" ? "✓ Semua booking sudah divalidasi" : "✓ Semua booking sudah di-approve"}
-            </p>
-            <p className="text-sm text-slate-400 mt-1">
-              {role === "Manager" ? "Tidak ada booking pending" : "Menunggu booking baru dari Manager"}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Completed/History Bookings - Role Specific */}
-      {completedBookings.length > 0 && (
+    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 mb-4">
-            {role === "Manager"
-              ? `📊 History - ACC Manager & Rejected (${completedBookings.length})`
-              : `✅ Completed - ACC Final & Rejected (${completedBookings.length})`
-            }
-          </h2>
-          <p className="text-sm text-slate-500 mb-4">
-            {role === "Manager"
-              ? "Daftar booking yang sudah Anda approved atau reject - untuk preview/history"
-              : "Daftar booking yang sudah selesai - semua booking sudah mendapat approval final atau di-reject"
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 bg-indigo-600 text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
+              {role} Dashboard
+            </span>
+          </div>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+            Approval <span className="text-indigo-600">Pengadaan Barang</span>
+          </h1>
+          <p className="text-slate-500 mt-2 max-w-2xl">
+            {role === "Manager" 
+              ? "Review permintaan barang dari tim lapangan, validasi jumlah, dan terbitkan nota untuk persetujuan Direktur."
+              : "Persetujuan akhir (Final ACC) untuk pengajuan barang yang telah divalidasi oleh Manager."
             }
           </p>
-          <div className="space-y-3">
-            {completedBookings.map((booking) => (
-              <div key={booking.id} className={`bg-white p-4 rounded-lg border flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                booking.status === "ACC Final" ? "border-emerald-200 bg-emerald-50/30" : "border-red-200 bg-red-50/30"
-              }`}>
-                <div className="flex items-center gap-3 flex-1">
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded">{booking.id}</span>
-                  <div>
-                    <p className="font-bold text-slate-900">{booking.buyer}</p>
-                    <p className="text-xs text-slate-500">{booking.unitId} • {booking.date}</p>
+        </div>
+        
+        {/* Role Switcher (For Demo/Dev) */}
+        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button 
+            onClick={() => setRole("Manager")}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${role === "Manager" ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            Manager
+          </button>
+          <button 
+            onClick={() => setRole("Owner")}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${role === "Owner" ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            Direktur
+          </button>
+        </div>
+      </div>
+
+      {/* Workflow Indicator */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <WorkflowStep 
+          num="1" 
+          title="Pengajuan" 
+          desc="Tim Lapangan" 
+          active={true} 
+          completed={true}
+        />
+        <WorkflowStep 
+          num="2" 
+          title="Validasi & Nota" 
+          desc="Manager" 
+          active={role === "Manager"} 
+          completed={requests.some(r => r.status !== "Pending")}
+        />
+        <WorkflowStep 
+          num="3" 
+          title="Final Approval" 
+          desc="Direktur/Owner" 
+          active={role === "Owner"} 
+          completed={requests.some(r => r.status === "ACC Final")}
+        />
+        <WorkflowStep 
+          num="4" 
+          title="Pembelian" 
+          desc="Logistik" 
+          active={false} 
+          completed={false}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column: Pending List */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <span className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center text-sm">⏳</span>
+              Menunggu Persetujuan ({pending.length})
+            </h2>
+          </div>
+
+          {pending.length > 0 ? (
+            <div className="space-y-4">
+              {pending.map((req) => (
+                <div key={req.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-indigo-300 transition-all group shadow-sm hover:shadow-xl hover:shadow-indigo-500/5">
+                  <div className="p-6">
+                    {/* Top Info */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{req.id}</p>
+                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{req.item}</h3>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full border text-[10px] font-bold ${getStatusStyle(req.status)}`}>
+                        {req.status === "Pending" ? "MENUNGGU MANAGER" : "MENUNGGU DIREKTUR"}
+                      </div>
+                    </div>
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-slate-50 mb-6">
+                      <DetailBox label="Jumlah" value={req.quantity} />
+                      <DetailBox label="Estimasi" value={new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(req.amount)} highlight />
+                      <DetailBox label="Pemohon" value={req.requester} />
+                      <DetailBox label="Tanggal" value={req.date} />
+                    </div>
+
+                    <div className="mb-6">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Keterangan</p>
+                      <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">{req.description}</p>
+                    </div>
+
+                    {/* Manager Specific: Show Nota creation logic */}
+                    {role === "Manager" && req.status === "Pending" && (
+                      <div className="bg-indigo-50/50 rounded-xl p-4 mb-6 border border-indigo-100 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-xl">📝</div>
+                        <div>
+                          <p className="text-sm font-bold text-indigo-900">Validasi Pengajuan</p>
+                          <p className="text-xs text-indigo-700">Dengan menyetujui, Anda menyatakan barang ini diperlukan dan siap diterbitkan Nota.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => handleApprove(req.id, role === "Manager" ? "ACC Manager" : "ACC Final")}
+                        className="flex-1 bg-slate-900 hover:bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
+                      >
+                        {role === "Manager" ? "✓ Setujui & Buat Nota" : "✓ Final Approval"}
+                      </button>
+                      <button 
+                        onClick={() => handleApprove(req.id, "Tolak")}
+                        className="px-6 py-3 bg-white hover:bg-red-50 text-red-600 border border-red-100 rounded-xl font-bold text-sm transition-all"
+                      >
+                        Tolak
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {booking.status === "ACC Final" && (
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded border border-emerald-200">
-                      ✓✓ {booking.status}
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">✨</div>
+              <h3 className="text-xl font-bold text-slate-900">Semua Beres!</h3>
+              <p className="text-slate-500 mt-2">Tidak ada pengajuan yang perlu diproses saat ini.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: History & Stats */}
+        <div className="space-y-6">
+          {/* Stats Card */}
+          <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-xl shadow-slate-200">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <span className="text-indigo-400">📊</span> Ringkasan
+            </h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                <p className="text-slate-400 text-sm">Total Pengajuan</p>
+                <p className="text-xl font-bold">{requests.length}</p>
+              </div>
+              <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                <p className="text-slate-400 text-sm">Disetujui Final</p>
+                <p className="text-xl font-bold text-emerald-400">{requests.filter(r => r.status === "ACC Final").length}</p>
+              </div>
+              <div className="flex justify-between items-center">
+                <p className="text-slate-400 text-sm">Ditolak</p>
+                <p className="text-xl font-bold text-red-400">{requests.filter(r => r.status === "Tolak").length}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* History List */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">📜</span>
+              Riwayat
+            </h3>
+            <div className="space-y-3">
+              {history.map((req) => (
+                <div key={req.id} className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-slate-200 transition-colors shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[10px] font-bold text-slate-400">{req.id}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${getStatusStyle(req.status)}`}>
+                      {req.status}
                     </span>
-                  )}
-                  {booking.status === "Tolak" && (
-                    <span className="text-xs font-bold text-red-700 bg-red-100 px-3 py-1.5 rounded border border-red-200">
-                      ❌ {booking.status}
-                    </span>
-                  )}
-                  {booking.status === "ACC Manager" && (
-                    <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1.5 rounded border border-indigo-200">
-                      ✓ {booking.status}
-                    </span>
+                  </div>
+                  <p className="font-bold text-slate-900 text-sm">{req.item}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">{req.quantity} • {req.date}</p>
+                  {req.notaNumber && (
+                    <div className="mt-2 pt-2 border-t border-slate-50 flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-indigo-600">Nota: {req.notaNumber}</span>
+                    </div>
                   )}
                 </div>
+              ))}
+              {history.length === 0 && (
+                <p className="text-center py-8 text-slate-400 text-sm italic">Belum ada riwayat</p>
+              )}
+            </div>
+          </div>
+
+          {/* Nota Mockup Preview Card */}
+          <div className="bg-amber-50/50 border border-amber-200 rounded-3xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-amber-200/20 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+            <h3 className="text-sm font-bold text-amber-900 mb-4 uppercase tracking-widest">Contoh Format Nota</h3>
+            <div className="bg-white rounded-xl p-4 shadow-sm text-[10px] font-mono space-y-2 border border-amber-100">
+              <div className="text-center border-b pb-2 mb-2">
+                <p className="font-bold">PERUMAHAN SEJAHTERA</p>
+                <p>NOTA PERMINTAAN BARANG</p>
               </div>
-            ))}
+              <div className="flex justify-between">
+                <span>No: NTA-XXXX</span>
+                <span>Tgl: 2024-XX-XX</span>
+              </div>
+              <div className="py-2">
+                <div className="flex justify-between border-b pb-1">
+                  <span>Item: Semen 3 Roda</span>
+                  <span>Qty: 50 Sak</span>
+                </div>
+              </div>
+              <div className="flex justify-between pt-2">
+                <div className="text-center">
+                  <p>Manager</p>
+                  <div className="h-6"></div>
+                  <p>( ________ )</p>
+                </div>
+                <div className="text-center">
+                  <p>Direktur</p>
+                  <div className="h-6"></div>
+                  <p>( ________ )</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-amber-700 mt-4 italic">* Nota otomatis tergenerate setelah approval Manager</p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-function StatCard({ icon, label, value, color, textColor }: { icon: string; label: string; value: string; color: string; textColor: string }) {
+function WorkflowStep({ num, title, desc, active, completed }: { num: string; title: string; desc: string; active: boolean; completed: boolean }) {
   return (
-    <div className={`${color} border p-5 rounded-lg shadow-sm`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">{label}</p>
-          <p className={`text-3xl font-bold mt-2 ${textColor}`}>{value}</p>
-        </div>
-        <span className="text-2xl">{icon}</span>
+    <div className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${active ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200 scale-105 z-10" : completed ? "bg-emerald-50 border-emerald-100 text-slate-900" : "bg-white border-slate-100 text-slate-400"}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${active ? "bg-white text-indigo-600" : completed ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-400"}`}>
+        {completed && !active ? "✓" : num}
       </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-tight">{title}</p>
+        <p className={`text-[10px] ${active ? "text-indigo-100" : "text-slate-500"}`}>{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function DetailBox({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+      <p className={`text-sm font-bold ${highlight ? "text-indigo-600" : "text-slate-900"}`}>{value}</p>
     </div>
   );
 }

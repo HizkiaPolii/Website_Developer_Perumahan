@@ -12,9 +12,10 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
     // Verify token dengan backend - GET /api/auth/verify
-    const response = await fetch('http://localhost:5000/api/auth/verify', {
+    const response = await fetch(`${apiUrl}/api/auth/verify`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
