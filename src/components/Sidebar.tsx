@@ -47,6 +47,8 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
     { label: "Manajemen Transaksi", href: "/transactions", roles: ["Admin", "Manager", "Owner"], icon: TrendingUp },
     { label: "Laporan Neraca", href: "/reports/balance-sheet", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
     { label: "Laporan Laba Rugi", href: "/reports/income-statement", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Arus Kas", href: "/reports/cash-flow", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Perubahan Modal", href: "/reports/changes-in-equity", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
     { label: "Pengarsipan Laporan", href: "/reports/archive", roles: ["Admin", "Manager", "Owner"], icon: Archive },
     { label: "Halaman Approval", href: "/approval", roles: ["Manager", "Owner"], icon: CheckCircle },
     { label: "Manajemen User", href: "/users", roles: ["Admin"], icon: Users },

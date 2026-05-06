@@ -103,7 +103,7 @@ export default function ApprovalPage() {
       message,
       confirmText: isReject ? "Ya, Tolak" : "Ya, Setujui",
       cancelText: "Batal",
-      type: isReject ? "danger" : "success"
+      type: isReject ? "danger" : "info"
     });
 
     if (!confirmed) return;
