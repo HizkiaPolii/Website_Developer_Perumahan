@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useCallback } from "react";
+import toast, { Toaster } from "react-hot-toast";
 
 type ToastType = "success" | "error" | "warning" | "info";
 
@@ -20,25 +21,80 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
   const addToast = useCallback((message: string, type: ToastType = "info", duration = 3000) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, type, message, duration }]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id));
-      }, duration);
+    const options = { duration };
+    switch (type) {
+      case "success":
+        toast.success(message, options);
+        break;
+      case "error":
+        toast.error(message, options);
+        break;
+      case "warning":
+        toast(message, {
+          icon: "⚠️",
+          style: {
+            background: "#fffbeb",
+            color: "#92400e",
+            border: "1px solid #fde68a",
+          },
+          ...options,
+        });
+        break;
+      case "info":
+      default:
+        toast(message, {
+          icon: "ℹ️",
+          style: {
+            background: "#eff6ff",
+            color: "#1e40af",
+            border: "1px solid #bfdbfe",
+          },
+          ...options,
+        });
+        break;
     }
   }, []);
 
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    toast.dismiss(id);
   }, []);
 
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext.Provider value={{ toasts: [], addToast, removeToast }}>
+      <Toaster
+        position="bottom-right"
+        reverseOrder={false}
+        toastOptions={{
+          className: "font-sans text-sm",
+          style: {
+            borderRadius: "8px",
+            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+          },
+          success: {
+            style: {
+              background: "#ecfdf5",
+              color: "#065f46",
+              border: "1px solid #a7f3d0",
+            },
+            iconTheme: {
+              primary: "#10b981",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            style: {
+              background: "#fef2f2",
+              color: "#991b1b",
+              border: "1px solid #fca5a5",
+            },
+            iconTheme: {
+              primary: "#ef4444",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
       {children}
     </ToastContext.Provider>
   );
@@ -51,3 +107,4 @@ export function useToast() {
   }
   return context;
 }
+

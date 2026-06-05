@@ -470,6 +470,25 @@ export function useFinancialReports() {
     }
   }, [callWithFallback]);
 
+  const create = useCallback(async (data: any): Promise<any | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await callWithFallback('POST', [
+        '/api/financial-reports',
+        '/api/reports',
+        '/api/dashboard/reports'
+      ], data);
+      const created = getResponseData<any | null>(response, null);
+      return created ? normalizeFinancialReport(created) : null;
+    } catch (err: any) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [callWithFallback]);
+
   const finalize = useCallback(async (id: number, finalizedBy: number, notes?: string): Promise<any | null> => {
     try {
       setLoading(true);
@@ -665,6 +684,7 @@ export function useFinancialReports() {
   return { 
     getAll, 
     getById, 
+    create,
     update, 
     finalize, 
     generateBalanceSheet,

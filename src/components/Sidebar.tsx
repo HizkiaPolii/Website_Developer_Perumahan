@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, DollarSign, BarChart3, CheckCircle, Users, FileText, TrendingUp, Archive } from "lucide-react";
 
-type Role = "Admin" | "Marketing" | "Manager" | "Owner";
+type Role = "Admin" | "Manager" | "Owner" | "Staf";
 
 interface User {
   id: string;
@@ -41,18 +41,17 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
     console.log("Sidebar - User:", user);
   }, [role, user]);
 
-  // Definisi Menu berdasarkan Role
   const menuItems = [
-    { label: "Dashboard", href: "/", roles: ["Admin", "Marketing", "Manager", "Owner"], icon: LayoutDashboard },
-    { label: "Manajemen Transaksi", href: "/transactions", roles: ["Admin", "Manager", "Owner"], icon: TrendingUp },
-    { label: "Laporan Neraca", href: "/reports/balance-sheet", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
-    { label: "Laporan Laba Rugi", href: "/reports/income-statement", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
-    { label: "Laporan Arus Kas", href: "/reports/cash-flow", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
-    { label: "Laporan Perubahan Modal", href: "/reports/changes-in-equity", roles: ["Admin", "Manager", "Owner"], icon: BarChart3 },
-    { label: "Pengarsipan Laporan", href: "/reports/archive", roles: ["Admin", "Manager", "Owner"], icon: Archive },
-    { label: "Halaman Approval", href: "/approval", roles: ["Manager", "Owner"], icon: CheckCircle },
+    { label: "Dashboard", href: "/", roles: ["Admin", "Manager", "Owner", "Staf"], icon: LayoutDashboard },
+    { label: "Manajemen Transaksi", href: "/transactions", roles: ["Manager"], icon: TrendingUp },
+    { label: "Laporan Neraca", href: "/reports/balance-sheet", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Laba Rugi", href: "/reports/income-statement", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Arus Kas", href: "/reports/cash-flow", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Perubahan Modal", href: "/reports/changes-in-equity", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Pengarsipan Laporan", href: "/reports/archive", roles: ["Manager", "Owner"], icon: Archive },
+    { label: "Halaman Approval", href: "/approval", roles: ["Staf", "Manager", "Owner"], icon: CheckCircle },
     { label: "Manajemen User", href: "/users", roles: ["Admin"], icon: Users },
-    { label: "Activity Log", href: "/activity-log", roles: ["Admin", "Manager", "Owner"], icon: FileText },
+    { label: "Activity Log", href: "/activity-log", roles: ["Admin", "Owner"], icon: FileText },
   ];
 
   // Normalize role untuk filtering

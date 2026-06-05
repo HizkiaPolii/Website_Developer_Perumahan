@@ -6,9 +6,19 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: "Admin" | "Marketing" | "Manager" | "Owner";
+  role: "Admin" | "Manager" | "Owner" | "Staf";
   companyId?: string | number;
 }
+
+const capitalizeRole = (role?: string): User["role"] => {
+  if (!role) return "Manager";
+  const normalized = role.trim().toLowerCase();
+  if (normalized === "admin") return "Admin";
+  if (normalized === "manager") return "Manager";
+  if (normalized === "owner") return "Owner";
+  if (normalized === "staf") return "Staf";
+  return "Manager";
+};
 
 interface AuthContextType {
   user: User | null;
@@ -68,6 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedToken && storedUser) {
         try {
           const userData = JSON.parse(storedUser);
+          if (userData && userData.role) {
+            userData.role = capitalizeRole(userData.role);
+          }
           
           // Validate user data
           if (!userData.id || !userData.email) {
@@ -207,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: data.user.id?.toString() || "",
           email: data.user.email,
           name: data.user.name,
-          role: data.user.role as User["role"],
+          role: capitalizeRole(data.user.role),
           companyId: data.user.companyId,
         };
         login(data.token, user);
@@ -222,7 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: userData.id?.toString() || "",
           email: userData.email,
           name: userData.name,
-          role: userData.role as User["role"],
+          role: capitalizeRole(userData.role),
           companyId: userData.companyId,
         };
         login(token, user);
@@ -236,7 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: data.user.id?.toString() || "",
           email: data.user.email,
           name: data.user.name,
-          role: data.user.role as User["role"],
+          role: capitalizeRole(data.user.role),
           companyId: data.user.companyId,
         };
         login(data.token, user);

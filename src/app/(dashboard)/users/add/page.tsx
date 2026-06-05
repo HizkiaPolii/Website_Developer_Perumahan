@@ -6,7 +6,7 @@ import { ArrowLeft, Loader } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-type Role = "Admin" | "Marketing" | "Manager" | "Owner";
+type Role = "Admin" | "Manager" | "Owner" | "Staf";
 
 export default function AddUserPage() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function AddUserPage() {
     email: "",
     password: "",
     phone: "",
-    role: "Marketing" as Role,
+    role: "Manager" as Role,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -81,7 +81,8 @@ export default function AddUserPage() {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/users", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const response = await fetch(`${apiUrl}/api/users`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -205,10 +206,10 @@ export default function AddUserPage() {
               onChange={handleChange}
               className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white font-bold text-slate-900 text-sm hover:border-slate-400"
             >
-              <option value="Marketing">📞 Marketing</option>
-              <option value="Manager">👔 Manager</option>
               <option value="Admin">🔑 Admin</option>
-              <option value="Owner">👑 Owner</option>
+              <option value="Manager">👔 Manager</option>
+              <option value="Owner">👑 Owner / Direktur</option>
+              <option value="Staf">👷 Staf</option>
             </select>
           </div>
 

@@ -2,22 +2,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  ArrowLeft, 
-  Calendar, 
   Folder, 
   FolderOpen, 
   Lock, 
   Unlock, 
-  FileText, 
-  Printer, 
-  X, 
-  Sparkles,
-  Download,
-  CheckCircle,
   TrendingUp,
   BarChart3
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/utils/financial-constants';
 
@@ -31,10 +22,8 @@ interface MonthlyArchive {
 }
 
 export default function DedicatedArchivePage() {
-  const router = useRouter();
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState(2026);
-
 
   const years = [2026, 2025, 2024];
   const months = [
@@ -95,21 +84,21 @@ export default function DedicatedArchivePage() {
     <div className="max-w-6xl mx-auto w-full pb-24 animate-in fade-in duration-500">
       
       {/* Upper Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm print:hidden">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm print:hidden">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">Pengarsipan Laporan</h1>
-            <p className="text-xs text-gray-400 font-bold italic">Arsip Laporan Keuangan per Tahun & per Bulan</p>
+            <h1 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Pengarsipan Laporan</h1>
+            <p className="text-xs text-slate-400 font-semibold italic">Arsip Laporan Keuangan per Tahun & per Bulan</p>
           </div>
         </div>
 
         {/* Premium Year Selector Tabs */}
-        <div className="flex bg-gray-100 p-1.5 rounded-2xl gap-1">
+        <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
           {years.map(year => (
             <button
               key={year}
               onClick={() => setSelectedYear(year)}
-              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${selectedYear === year ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${selectedYear === year ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
             >
               {year}
             </button>
@@ -119,32 +108,32 @@ export default function DedicatedArchivePage() {
 
       {/* Year Statistics Panel */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 print:hidden">
-        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Bulan Terarsip</span>
-            <span className="text-xl font-black text-indigo-600 mt-1 block">{stats.finalizedCount} / 12 Bulan</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Bulan Terarsip</span>
+            <span className="text-xl font-bold text-indigo-600 mt-1 block">{stats.finalizedCount} / 12 Bulan</span>
           </div>
           <span className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
             <Folder className="w-5 h-5" />
           </span>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Akumulasi Pendapatan Tahun {selectedYear}</span>
-            <span className="text-xl font-black text-emerald-600 mt-1 block">{formatCurrency(stats.totalRevenue)}</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Akumulasi Pendapatan Tahun {selectedYear}</span>
+            <span className="text-xl font-bold text-emerald-600 mt-1 block">{formatCurrency(stats.totalRevenue)}</span>
           </div>
           <span className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
             <TrendingUp className="w-5 h-5" />
           </span>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Akumulasi Laba Bersih Tahun {selectedYear}</span>
-            <span className="text-xl font-black text-blue-600 mt-1 block">{formatCurrency(stats.totalProfit)}</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Akumulasi Laba Bersih Tahun {selectedYear}</span>
+            <span className="text-xl font-bold text-indigo-600 mt-1 block">{formatCurrency(stats.totalProfit)}</span>
           </div>
-          <span className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+          <span className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
             <BarChart3 className="w-5 h-5" />
           </span>
         </div>
@@ -157,21 +146,21 @@ export default function DedicatedArchivePage() {
           return (
             <div 
               key={archive.monthIndex}
-              className={`bg-white border rounded-3xl p-6 shadow-sm transition-all relative overflow-hidden group ${isFinalized ? 'border-indigo-100 hover:shadow-md' : 'border-gray-100 hover:border-gray-200 opacity-90'}`}
+              className={`bg-white border rounded-3xl p-6 shadow-sm transition-all relative overflow-hidden group ${isFinalized ? 'border-indigo-100 hover:shadow-md' : 'border-slate-200/60 hover:border-slate-300 opacity-90'}`}
             >
               {/* Folder Status Header */}
-              <div className="flex items-center justify-between border-b border-gray-50 pb-4 mb-4">
+              <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-4">
                 <div className="flex items-center gap-3">
-                  <span className={`p-2.5 rounded-xl ${isFinalized ? 'bg-indigo-50 text-indigo-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                  <span className={`p-2.5 rounded-xl ${isFinalized ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>
                     {isFinalized ? <FolderOpen className="w-5 h-5" /> : <Folder className="w-5 h-5" />}
                   </span>
                   <div>
-                    <h3 className="text-xs font-black text-gray-900 uppercase tracking-tight">{archive.monthName}</h3>
-                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest block mt-0.5">Tahun {selectedYear}</span>
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight">{archive.monthName}</h3>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest block mt-0.5">Tahun {selectedYear}</span>
                   </div>
                 </div>
 
-                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${isFinalized ? 'bg-emerald-50 text-emerald-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${isFinalized ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                   {isFinalized ? (
                     <><Lock className="w-2.5 h-2.5" /> Terarsip</>
                   ) : (
@@ -182,47 +171,47 @@ export default function DedicatedArchivePage() {
 
               {/* Mini Financial Summary */}
               {isFinalized ? (
-                <div className="grid grid-cols-2 gap-2 mb-5 bg-gray-50/50 p-3 rounded-2xl">
+                <div className="grid grid-cols-2 gap-2 mb-5 bg-slate-50 p-3 rounded-2xl">
                   <div>
-                    <span className="text-[8px] text-gray-400 font-bold block uppercase tracking-wider">Pendapatan</span>
-                    <span className="text-[10px] font-black text-emerald-600 block">{formatCurrency(archive.revenue)}</span>
+                    <span className="text-[8px] text-slate-400 font-semibold block uppercase tracking-wider">Pendapatan</span>
+                    <span className="text-[10px] font-bold text-emerald-600 block">{formatCurrency(archive.revenue)}</span>
                   </div>
                   <div>
-                    <span className="text-[8px] text-gray-400 font-bold block uppercase tracking-wider">Laba Bersih</span>
-                    <span className="text-[10px] font-black text-blue-600 block">{formatCurrency(archive.netProfit)}</span>
+                    <span className="text-[8px] text-slate-400 font-semibold block uppercase tracking-wider">Laba Bersih</span>
+                    <span className="text-[10px] font-bold text-indigo-600 block">{formatCurrency(archive.netProfit)}</span>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-2 mb-5 bg-yellow-50/20 rounded-2xl border border-dashed border-yellow-100">
-                  <p className="text-[9px] text-yellow-600 font-bold uppercase">Laporan belum difinalisasi bulan ini</p>
+                <div className="text-center py-2 mb-5 bg-amber-50/20 rounded-2xl border border-dashed border-amber-100">
+                  <p className="text-[9px] text-amber-700 font-semibold uppercase">Laporan belum difinalisasi</p>
                 </div>
               )}
 
               {/* 4 Report Links Access Grid */}
               <div className="space-y-2">
-                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Buka Laporan Arsip:</span>
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Buka Laporan Arsip:</span>
                 <div className="grid grid-cols-2 gap-2">
                   <button 
-                    onClick={() => window.open(`/reports/archive/view?year=${selectedYear}&month=${archive.monthName}&type=NERACA`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-700 rounded-xl text-[10px] font-black uppercase transition-all"
+                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=NERACA`, '_blank')}
+                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
                   >
                     📊 Neraca
                   </button>
                   <button 
-                    onClick={() => window.open(`/reports/archive/view?year=${selectedYear}&month=${archive.monthName}&type=LABA_RUGI`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-700 rounded-xl text-[10px] font-black uppercase transition-all"
+                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=LABA_RUGI`, '_blank')}
+                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
                   >
                     📈 Laba Rugi
                   </button>
                   <button 
-                    onClick={() => window.open(`/reports/archive/view?year=${selectedYear}&month=${archive.monthName}&type=ARUS_KAS`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-700 rounded-xl text-[10px] font-black uppercase transition-all"
+                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=ARUS_KAS`, '_blank')}
+                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
                   >
                     💸 Arus Kas
                   </button>
                   <button 
-                    onClick={() => window.open(`/reports/archive/view?year=${selectedYear}&month=${archive.monthName}&type=MODAL`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-700 rounded-xl text-[10px] font-black uppercase transition-all"
+                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=MODAL`, '_blank')}
+                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
                   >
                     🔄 Modal
                   </button>
@@ -232,8 +221,7 @@ export default function DedicatedArchivePage() {
             </div>
           );
         })}
-   </div>
-
+      </div>
 
     </div>
   );

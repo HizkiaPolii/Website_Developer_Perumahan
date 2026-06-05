@@ -7,7 +7,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useApiEndpoints';
 
-type Role = 'Admin' | 'Marketing' | 'Manager' | 'Owner';
+type Role = 'Admin' | 'Manager' | 'Owner' | 'Staf';
 
 interface User {
   id: string | number;
@@ -30,7 +30,7 @@ export default function EditUserPage() {
     name: '',
     email: '',
     phone: '',
-    role: 'Marketing' as Role,
+    role: 'Manager' as Role,
   });
 
   const userId = params.id as string;
@@ -50,7 +50,7 @@ export default function EditUserPage() {
 
         // Capitalize role: "manager" -> "Manager"
         const capitalizedRole =
-          (data.role?.charAt(0).toUpperCase() + data.role?.slice(1).toLowerCase()) as Role || 'Marketing';
+          (data.role?.charAt(0).toUpperCase() + data.role?.slice(1).toLowerCase()) as Role || 'Manager';
 
         setFormData({
           name: data.name,
@@ -201,10 +201,10 @@ export default function EditUserPage() {
               onChange={handleChange}
               className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-slate-900 font-semibold text-sm hover:border-slate-400"
             >
-              <option value="Marketing">📞 Marketing</option>
-              <option value="Manager">👔 Manager</option>
               <option value="Admin">🔑 Admin</option>
-              <option value="Owner">👑 Owner</option>
+              <option value="Manager">👔 Manager</option>
+              <option value="Owner">👑 Owner / Direktur</option>
+              <option value="Staf">👷 Staf</option>
             </select>
           </div>
 

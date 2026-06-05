@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -28,6 +29,7 @@ const getResponseMessage = (responseData: unknown, fallback: string) => {
  */
 export function useApi() {
   const { token, logout, user } = useAuth();
+  const { addToast } = useToast();
 
   const buildUrl = useCallback((endpoint: string, method: HttpMethod) => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -72,6 +74,7 @@ export function useApi() {
 
       if (response.status === 401) {
         logout();
+        addToast('Sesi Anda telah berakhir, silakan login kembali.', 'warning', 5000);
         throw new Error('Unauthorized');
       }
 
