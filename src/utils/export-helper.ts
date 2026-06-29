@@ -59,7 +59,7 @@ function flattenNodesForCSV(nodes: any[], level = 0): { code: string; name: stri
 export function exportIncomeStatementToCSV(isData: any, periodLabel = "Periode Berjalan") {
   const rows: (string | number | boolean | null | undefined)[][] = [
     ["LAPORAN LABA RUGI"],
-    ["PRODEV - Housing Finance System"],
+    ["Bumi Residence - Housing Finance System"],
     [`Periode: ${periodLabel}`],
     ["Tanggal Unduh", new Date().toLocaleString("id-ID")],
     [],
@@ -94,7 +94,7 @@ export function exportIncomeStatementToCSV(isData: any, periodLabel = "Periode B
 export function exportBalanceSheetToCSV(bsData: any, ecData: any, periodLabel = "Periode Berjalan") {
   const rows: (string | number | boolean | null | undefined)[][] = [
     ["LAPORAN NERACA (BALANCE SHEET)"],
-    ["PRODEV - Housing Finance System"],
+    ["Bumi Residence - Housing Finance System"],
     [`Periode: ${periodLabel}`],
     ["Tanggal Unduh", new Date().toLocaleString("id-ID")],
     [],
@@ -142,7 +142,7 @@ export function exportBalanceSheetToCSV(bsData: any, ecData: any, periodLabel = 
 export function exportCashFlowToCSV(cfData: any, periodLabel = "Periode Berjalan") {
   const rows: (string | number | boolean | null | undefined)[][] = [
     ["LAPORAN ARUS KAS"],
-    ["PRODEV - Housing Finance System"],
+    ["Bumi Residence - Housing Finance System"],
     [`Periode: ${periodLabel}`],
     ["Tanggal Unduh", new Date().toLocaleString("id-ID")],
     [],
@@ -199,7 +199,7 @@ export function exportCashFlowToCSV(cfData: any, periodLabel = "Periode Berjalan
 export function exportEquityChangeToCSV(ecData: any, modalAccounts: any[], priveAccounts: any[], balances: any, periodLabel = "Periode Berjalan") {
   const rows: (string | number | boolean | null | undefined)[][] = [
     ["LAPORAN PERUBAHAN MODAL"],
-    ["PRODEV - Housing Finance System"],
+    ["Bumi Residence - Housing Finance System"],
     [`Periode: ${periodLabel}`],
     ["Tanggal Unduh", new Date().toLocaleString("id-ID")],
     [],

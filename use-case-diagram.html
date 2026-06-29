@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use Case Diagram — PRODEV Housing Finance System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            padding: 24px;
+            font-family: 'Times New Roman', Georgia, serif;
+        }
+        .container { max-width: 1100px; width: 100%; }
+        svg { width: 100%; height: auto; display: block; }
+        .caption {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 16px;
+            color: #222;
+        }
+        @media print {
+            body { padding: 0; }
+            .caption { margin-top: 8px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <svg id="ucd" viewBox="0 0 1600 1480" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <marker id="arrowOpen" markerWidth="10" markerHeight="7"
+                    refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,1 L8,3.5 L0,6" fill="none" stroke="#333" stroke-width="1.2"/>
+            </marker>
+        </defs>
+    </svg>
+    <p class="caption">Gambar 1. <i>Use Case Diagram</i> Sistem PRODEV</p>
+</div>
+
+<script>
+(function () {
+    const svg = document.getElementById('ucd');
+    const NS = 'http://www.w3.org/2000/svg';
+
+    /* ── Helper: create SVG element ── */
+    function $(tag, attrs = {}) {
+        const e = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+        return e;
+    }
+
+    /* ── Layers for z-ordering ── */
+    const L = {};
+    ['bg', 'solidLines', 'dashedLines', 'shapes', 'actors', 'text', 'labels']
+        .forEach(id => { L[id] = $('g', { id }); svg.appendChild(L[id]); });
+
+    /* ═══════════════════════════════════════════
+       1. SYSTEM BOUNDARY
+       ═══════════════════════════════════════════ */
+    L.bg.appendChild($('rect', {
+        x: 255, y: 32, width: 1090, height: 1400,
+        rx: 4, ry: 4, fill: 'none', stroke: '#222', 'stroke-width': 2
+    }));
+    const title = $('text', {
+        x: 800, y: 60, 'text-anchor': 'middle',
+        'font-family': "'Times New Roman', serif",
+        'font-size': 17, 'font-weight': 'bold', fill: '#222'
+    });
+    title.textContent = 'Use Case Diagram PRODEV';
+    L.bg.appendChild(title);
+
+    /* ═══════════════════════════════════════════
+       2. ACTORS
+       ═══════════════════════════════════════════ */
+    const ACTORS = {
+        teller:  { x: 115, y: 380, label: 'Teller' },
+        staf:    { x: 115, y: 920, label: 'Staf' },
+        admin:   { x: 1485, y: 350, label: 'Admin' },
+        manager: { x: 1485, y: 830, label: 'Manager' },
+        owner:   { x: 1485, y: 1260, label: 'Owner' },
+    };
+
+    function drawActor(a) {
+        const { x, y, label } = a;
+        const g = $('g');
+        g.appendChild($('circle', { cx: x, cy: y - 26, r: 10, fill: '#fff', stroke: '#333', 'stroke-width': 1.5 }));
+        g.appendChild($('line', { x1: x, y1: y - 16, x2: x, y2: y + 14, stroke: '#333', 'stroke-width': 1.5 }));
+        g.appendChild($('line', { x1: x - 16, y1: y - 3, x2: x + 16, y2: y - 3, stroke: '#333', 'stroke-width': 1.5 }));
+        g.appendChild($('line', { x1: x, y1: y + 14, x2: x - 13, y2: y + 34, stroke: '#333', 'stroke-width': 1.5 }));
+        g.appendChild($('line', { x1: x, y1: y + 14, x2: x + 13, y2: y + 34, stroke: '#333', 'stroke-width': 1.5 }));
+        const t = $('text', {
+            x, y: y + 52, 'text-anchor': 'middle',
+            'font-family': "'Times New Roman', serif", 'font-size': 14, fill: '#222'
+        });
+        t.textContent = label;
+        g.appendChild(t);
+        L.actors.appendChild(g);
+    }
+    Object.values(ACTORS).forEach(drawActor);
+
+    /* ═══════════════════════════════════════════
+       3. USE CASES
+       ═══════════════════════════════════════════ */
+    const UC = {
+        login:       { x: 800, y: 450, rx: 75,  ry: 23, label: 'Login' },
+        dashboard:   { x: 590, y: 140, rx: 105, ry: 24, label: 'Lihat Dashboard' },
+        masterAkun:  { x: 465, y: 280, rx: 95,  ry: 30, label: ['Kelola', 'Master Akun'] },
+        transaksi:   { x: 475, y: 555, rx: 85,  ry: 30, label: ['Kelola', 'Transaksi'] },
+        approvalTrx: { x: 1065, y: 640, rx: 88, ry: 30, label: ['Approval', 'Transaksi'] },
+        approvalPgd: { x: 620, y: 830, rx: 90,  ry: 30, label: ['Approval', 'Pengadaan'] },
+        laporan:     { x: 800, y: 1040, rx: 102, ry: 30, label: ['Lihat Laporan', 'Keuangan'] },
+        exportLap:   { x: 530, y: 1220, rx: 100, ry: 30, label: ['Export Laporan', 'PDF / Excel'] },
+        finalisasi:  { x: 1065, y: 1180, rx: 88, ry: 30, label: ['Finalisasi', 'Laporan'] },
+        arsip:       { x: 800, y: 1350, rx: 88,  ry: 30, label: ['Arsipkan', 'Laporan'] },
+        kelolaUser:  { x: 1105, y: 280, rx: 85,  ry: 23, label: 'Kelola User' },
+        actLog:      { x: 1105, y: 480, rx: 90,  ry: 30, label: ['Lihat', 'Activity Log'] },
+        validasiDE:  { x: 695, y: 685, rx: 90,  ry: 30, label: ['Validasi', 'Double-Entry'] },
+        posting:     { x: 870, y: 820, rx: 82,  ry: 30, label: ['Posting', 'ke Jurnal'] },
+    };
+
+    function drawUC(uc) {
+        const { x, y, rx, ry, label } = uc;
+        L.shapes.appendChild($('ellipse', {
+            cx: x, cy: y, rx, ry,
+            fill: '#fff', stroke: '#333', 'stroke-width': 1.5
+        }));
+
+        if (Array.isArray(label)) {
+            const t = $('text', {
+                'text-anchor': 'middle',
+                'font-family': "'Times New Roman', serif",
+                'font-size': 11, fill: '#222'
+            });
+            const startY = y - (label.length - 1) * 6;
+            label.forEach((line, i) => {
+                const ts = $('tspan', { x });
+                if (i === 0) ts.setAttribute('y', startY);
+                else ts.setAttribute('dy', 13);
+                ts.textContent = line;
+                t.appendChild(ts);
+            });
+            L.text.appendChild(t);
+        } else {
+            const t = $('text', {
+                x, y: y + 4, 'text-anchor': 'middle',
+                'font-family': "'Times New Roman', serif",
+                'font-size': 12, fill: '#222'
+            });
+            t.textContent = label;
+            L.text.appendChild(t);
+        }
+    }
+    Object.values(UC).forEach(drawUC);
+
+    /* ═══════════════════════════════════════════
+       4. GEOMETRY HELPERS
+       ═══════════════════════════════════════════ */
+    function ellipseEdge(uc, toX, toY) {
+        const dx = toX - uc.x, dy = toY - uc.y;
+        const a = Math.atan2(dy, dx);
+        return { x: uc.x + uc.rx * Math.cos(a), y: uc.y + uc.ry * Math.sin(a) };
+    }
+
+    /* ═══════════════════════════════════════════
+       5. SOLID LINES — Actor → Use Case
+       ═══════════════════════════════════════════ */
+    const SOLID = [
+        ['teller', 'masterAkun'], ['teller', 'transaksi'],
+        ['staf', 'approvalPgd'],
+        ['admin', 'kelolaUser'], ['admin', 'actLog'],
+        ['manager', 'transaksi'], ['manager', 'approvalTrx'],
+        ['manager', 'approvalPgd'], ['manager', 'laporan'], ['manager', 'finalisasi'],
+        ['owner', 'transaksi'], ['owner', 'approvalPgd'],
+        ['owner', 'laporan'], ['owner', 'actLog'],
+    ];
+
+    SOLID.forEach(([aId, uId]) => {
+        const a = ACTORS[aId], u = UC[uId];
+        const ep = ellipseEdge(u, a.x, a.y);
+        L.solidLines.appendChild($('line', {
+            x1: a.x, y1: a.y, x2: ep.x, y2: ep.y,
+            stroke: '#333', 'stroke-width': 1
+        }));
+    });
+
+    /* ═══════════════════════════════════════════
+       6. DASHED LINES — <<Include>> & <<Extend>>
+       ═══════════════════════════════════════════ */
+    function drawRel(fromId, toId, label, offsetDir) {
+        const from = UC[fromId], to = UC[toId];
+        const fp = ellipseEdge(from, to.x, to.y);
+        const tp = ellipseEdge(to, from.x, from.y);
+
+        L.dashedLines.appendChild($('line', {
+            x1: fp.x, y1: fp.y, x2: tp.x, y2: tp.y,
+            stroke: '#333', 'stroke-width': 1,
+            'stroke-dasharray': '7,4',
+            'marker-end': 'url(#arrowOpen)'
+        }));
+
+        /* label at midpoint with perpendicular offset */
+        const mx = (fp.x + tp.x) / 2, my = (fp.y + tp.y) / 2;
+        const dx = tp.x - fp.x, dy = tp.y - fp.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const dir = offsetDir || 1;
+        const off = 12 * dir;
+        const lx = mx + (-dy / len) * off;
+        const ly = my + (dx / len) * off;
+
+        const tw = label.length * 5.8 + 6;
+        L.labels.appendChild($('rect', {
+            x: lx - tw / 2, y: ly - 7, width: tw, height: 13,
+            fill: '#fff', stroke: 'none'
+        }));
+        const t = $('text', {
+            x: lx, y: ly + 3, 'text-anchor': 'middle',
+            'font-family': "'Times New Roman', serif",
+            'font-size': 9.5, fill: '#333'
+        });
+        t.textContent = label;
+        L.labels.appendChild(t);
+    }
+
+    /* Include relationships */
+    drawRel('masterAkun', 'login', '<<Include>>', 1);
+    drawRel('transaksi', 'login', '<<Include>>', -1);
+    drawRel('approvalTrx', 'login', '<<Include>>', -1);
+    drawRel('approvalPgd', 'login', '<<Include>>', -1);
+    drawRel('kelolaUser', 'login', '<<Include>>', -1);
+    drawRel('actLog', 'login', '<<Include>>', 1);
+    drawRel('laporan', 'login', '<<Include>>', 1);
+    drawRel('dashboard', 'login', '<<Include>>', -1);
+    drawRel('transaksi', 'validasiDE', '<<Include>>', 1);
+    drawRel('approvalTrx', 'posting', '<<Include>>', -1);
+
+    /* Extend relationships */
+    drawRel('laporan', 'exportLap', '<<Extend>>', 1);
+    drawRel('laporan', 'finalisasi', '<<Extend>>', -1);
+    drawRel('laporan', 'arsip', '<<Extend>>', -1);
+
+})();
+</script>
+</body>
+</html>

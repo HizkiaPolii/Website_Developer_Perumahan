@@ -702,3 +702,118 @@ export function useFinancialReports() {
     error 
   };
 }
+
+/**
+ * Hook untuk Purchase Requests (Pengadaan Barang) API calls
+ */
+export function usePurchaseRequests() {
+  const { call } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getAll = useCallback(async (params?: any): Promise<any[]> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const queryStr = params
+        ? `?${new URLSearchParams(params).toString()}`
+        : '';
+      const response = await call('GET', `/api/purchase-requests${queryStr}`);
+      return response.data || [];
+    } catch (err: any) {
+      setError(err.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [call]);
+
+  const getById = useCallback(async (id: string): Promise<any | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await call('GET', `/api/purchase-requests/${id}`);
+      return response.data || null;
+    } catch (err: any) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [call]);
+
+  const create = useCallback(async (data: any): Promise<any | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await call('POST', '/api/purchase-requests', data);
+      return response.data || null;
+    } catch (err: any) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [call]);
+
+  const approveManager = useCallback(async (id: string): Promise<any | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await call('POST', `/api/purchase-requests/${id}/approve-manager`, {});
+      return response.data || null;
+    } catch (err: any) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [call]);
+
+  const approveOwner = useCallback(async (id: string): Promise<any | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await call('POST', `/api/purchase-requests/${id}/approve-owner`, {});
+      return response.data || null;
+    } catch (err: any) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [call]);
+
+  const reject = useCallback(async (id: string, reason: string): Promise<any | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await call('POST', `/api/purchase-requests/${id}/reject`, {
+        rejectionReason: reason
+      });
+      return response.data || null;
+    } catch (err: any) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [call]);
+
+  const delete_ = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await call('DELETE', `/api/purchase-requests/${id}`);
+      return response.success;
+    } catch (err: any) {
+      setError(err.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [call]);
+
+  return { getAll, getById, create, approveManager, approveOwner, reject, delete: delete_, loading, error };
+}
+

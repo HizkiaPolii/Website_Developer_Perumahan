@@ -6,7 +6,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: "Admin" | "Manager" | "Owner" | "Staf";
+  role: "Admin" | "Manager" | "Owner" | "Staf" | "Teller";
   companyId?: string | number;
 }
 
@@ -17,6 +17,7 @@ const capitalizeRole = (role?: string): User["role"] => {
   if (normalized === "manager") return "Manager";
   if (normalized === "owner") return "Owner";
   if (normalized === "staf") return "Staf";
+  if (normalized === "teller") return "Teller";
   return "Manager";
 };
 

@@ -1,228 +1,577 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Folder, 
-  FolderOpen, 
+  Archive, 
   Lock, 
-  Unlock, 
+  Eye,
+  FileText,
+  Loader2,
+  Calendar,
+  BarChart3,
   TrendingUp,
-  BarChart3
+  DollarSign,
+  RefreshCw,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Search
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFinancialReports } from '@/hooks/useApiEndpoints';
+import { useApi } from '@/hooks/useApi';
 import { formatCurrency } from '@/utils/financial-constants';
+import { PageHeader, Card, Btn } from '@/components/finance-ui';
 
-interface MonthlyArchive {
-  monthIndex: number;
-  monthName: string;
-  status: 'DRAFT' | 'FINALIZED';
-  revenue: number;
-  expenses: number;
-  netProfit: number;
+/* ══════════════════════════════════════════════════════════════════
+   TIPE DATA
+   ══════════════════════════════════════════════════════════════════ */
+
+interface DailyArchive {
+  date: string;          // YYYY-MM-DD
+  dayName: string;       // Senin, Selasa, etc.
+  displayDate: string;   // 24 Juni 2026
+  status: 'LOCKED' | 'OPEN';
+  lockedAt?: string;     // Jam dikunci (e.g. "17:00")
+  lockedBy?: string;     // User yang mengunci
+  reports: {
+    neraca: { available: boolean; totalAset?: number; totalPasiva?: number };
+    labaRugi: { available: boolean; pendapatan?: number; beban?: number; labaBersih?: number };
+    arusKas: { available: boolean; kasAkhir?: number };
+    perubahanModal: { available: boolean; modalAkhir?: number };
+  };
 }
 
-export default function DedicatedArchivePage() {
+/* ══════════════════════════════════════════════════════════════════
+   HELPER — Generate dummy End-of-Day archives
+   ══════════════════════════════════════════════════════════════════ */
+
+const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+function generateDailyArchives(year: number, month: number, apiReports: any[] = []): DailyArchive[] {
+  const today = new Date();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const archives: DailyArchive[] = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+
+    // Skip weekend (Sabtu & Minggu)
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    // Find reports for this date in apiReports
+    const dayReports = apiReports.filter((rep: any) => {
+      const repDate = new Date(rep.periodEnd);
+      const repDateStr = `${repDate.getFullYear()}-${String(repDate.getMonth() + 1).padStart(2, '0')}-${String(repDate.getDate()).padStart(2, '0')}`;
+      return repDateStr === dateStr;
+    });
+
+    const isLocked = dayReports.some((rep: any) => rep.status === "FINALIZED");
+    
+    // Find specific reports
+    const neracaReport = dayReports.find((r: any) => r.reportType === "NERACA");
+    const labaRugiReport = dayReports.find((r: any) => r.reportType === "LABA_RUGI");
+    const arusKasReport = dayReports.find((r: any) => r.reportType === "ARUS_KAS");
+    const modalReport = dayReports.find((r: any) => r.reportType === "MODAL");
+
+    const lockedRep = dayReports.find((r: any) => r.status === "FINALIZED");
+    const lockedAtTime = lockedRep?.finalizedAt 
+      ? new Date(lockedRep.finalizedAt).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) + " WITA" 
+      : undefined;
+    const lockedByUser = lockedRep?.finalizer?.name || lockedRep?.creator?.name || "Sistem";
+
+    archives.push({
+      date: dateStr,
+      dayName: HARI[dayOfWeek],
+      displayDate: `${day} ${BULAN[month]} ${year}`,
+      status: isLocked ? 'LOCKED' : 'OPEN',
+      lockedAt: isLocked ? (lockedAtTime || '18:00 WITA') : undefined,
+      lockedBy: isLocked ? lockedByUser : undefined,
+      reports: {
+        neraca: {
+          available: !!neracaReport,
+          totalAset: neracaReport?.reportData?.totalAset || undefined,
+          totalPasiva: neracaReport?.reportData?.totalPasiva || undefined,
+        },
+        labaRugi: {
+          available: !!labaRugiReport,
+          pendapatan: labaRugiReport?.reportData?.totalPendapatan || undefined,
+          beban: labaRugiReport?.reportData?.totalBeban || undefined,
+          labaBersih: labaRugiReport?.reportData?.labaBersih || undefined,
+        },
+        arusKas: {
+          available: !!arusKasReport,
+          kasAkhir: arusKasReport?.reportData?.kasAkhirPeriode || undefined,
+        },
+        perubahanModal: {
+          available: !!modalReport,
+          modalAkhir: modalReport?.reportData?.ekuitasAkhir || undefined,
+        },
+      }
+    });
+  }
+
+  return archives;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   KOMPONEN UTAMA
+   ══════════════════════════════════════════════════════════════════ */
+
+export default function ArsipLaporanPage() {
   const { user } = useAuth();
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const { getAll, loading } = useFinancialReports();
+  const { call } = useApi();
+
+  const today = new Date();
+  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(today.getMonth());
+  const [apiReports, setApiReports] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchDate, setSearchDate] = useState('');
 
   const years = [2026, 2025, 2024];
-  const months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
 
-  // Mocked localized monthly data per year for property developer
-  const archiveData: Record<number, MonthlyArchive[]> = {
-    2026: [
-      { monthIndex: 0, monthName: 'Januari', status: 'FINALIZED', revenue: 410000000, expenses: 280000000, netProfit: 130000000 },
-      { monthIndex: 1, monthName: 'Februari', status: 'FINALIZED', revenue: 430000000, expenses: 290000000, netProfit: 140000000 },
-      { monthIndex: 2, monthName: 'Maret', status: 'FINALIZED', revenue: 450000000, expenses: 310000000, netProfit: 140000000 },
-      { monthIndex: 3, monthName: 'April', status: 'FINALIZED', revenue: 465000000, expenses: 315000000, netProfit: 150000000 },
-      { monthIndex: 4, monthName: 'Mei', status: 'DRAFT', revenue: 450000000, expenses: 315000000, netProfit: 135000000 },
-      { monthIndex: 5, monthName: 'Juni', status: 'DRAFT', revenue: 0, expenses: 0, netProfit: 0 },
-      { monthIndex: 6, monthName: 'Juli', status: 'DRAFT', revenue: 0, expenses: 0, netProfit: 0 },
-      { monthIndex: 7, monthName: 'Agustus', status: 'DRAFT', revenue: 0, expenses: 0, netProfit: 0 },
-      { monthIndex: 8, monthName: 'September', status: 'DRAFT', revenue: 0, expenses: 0, netProfit: 0 },
-      { monthIndex: 9, monthName: 'Oktober', status: 'DRAFT', revenue: 0, expenses: 0, netProfit: 0 },
-      { monthIndex: 10, monthName: 'November', status: 'DRAFT', revenue: 0, expenses: 0, netProfit: 0 },
-      { monthIndex: 11, monthName: 'Desember', status: 'DRAFT', revenue: 0, expenses: 0, netProfit: 0 },
-    ],
-    2025: months.map((name, index) => ({
-      monthIndex: index,
-      monthName: name,
-      status: 'FINALIZED',
-      revenue: 380000000 + (index * 15000000),
-      expenses: 250000000 + (index * 8000000),
-      netProfit: (380000000 + (index * 15000000)) - (250000000 + (index * 8000000))
-    })),
-    2024: months.map((name, index) => ({
-      monthIndex: index,
-      monthName: name,
-      status: 'FINALIZED',
-      revenue: 300000000 + (index * 12000000),
-      expenses: 210000000 + (index * 5000000),
-      netProfit: (300000000 + (index * 12000000)) - (210000000 + (index * 5000000))
-    }))
+  // Fetch real data from API
+  const fetchReports = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAll();
+      setApiReports(data || []);
+    } catch (err) {
+      console.error('Gagal memuat data arsip:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const selectedYearData = useMemo(() => {
-    return archiveData[selectedYear] || [];
-  }, [selectedYear]);
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
+  const handleLockDay = async (date: string) => {
+    setIsLoading(true);
+    try {
+      const res = await call('POST', '/api/dashboard/reports/eod/trigger', {
+        companyId: user?.companyId || 1,
+        date,
+      });
+      if (res && res.success) {
+        await fetchReports();
+      } else {
+        alert(res?.message || 'Gagal menjalankan End of Day');
+      }
+    } catch (err: any) {
+      console.error('Gagal mengunci hari:', err);
+      alert(err.message || 'Gagal menjalankan End of Day');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate daily archives for selected month
+  const dailyArchives = useMemo(
+    () => generateDailyArchives(selectedYear, selectedMonth, apiReports),
+    [selectedYear, selectedMonth, apiReports]
+  );
+
+  // Filter by search
+  const filteredArchives = useMemo(() => {
+    if (!searchDate) return dailyArchives;
+    return dailyArchives.filter(a =>
+      a.displayDate.toLowerCase().includes(searchDate.toLowerCase()) ||
+      a.dayName.toLowerCase().includes(searchDate.toLowerCase()) ||
+      a.date.includes(searchDate)
+    );
+  }, [dailyArchives, searchDate]);
+
+  // Stats
   const stats = useMemo(() => {
-    const finalized = selectedYearData.filter(m => m.status === 'FINALIZED');
-    const totalRev = finalized.reduce((sum, m) => sum + m.revenue, 0);
-    const totalProfit = finalized.reduce((sum, m) => sum + m.netProfit, 0);
+    const locked = dailyArchives.filter(a => a.status === 'LOCKED');
+    const open = dailyArchives.filter(a => a.status === 'OPEN');
     return {
-      finalizedCount: finalized.length,
-      totalRevenue: totalRev,
-      totalProfit
+      totalDays: dailyArchives.length,
+      locked: locked.length,
+      open: open.length,
+      apiReportsCount: apiReports.length,
     };
-  }, [selectedYearData]);
+  }, [dailyArchives, apiReports]);
+
+  // Navigate month
+  const prevMonth = () => {
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear(y => y - 1);
+    } else {
+      setSelectedMonth(m => m - 1);
+    }
+  };
+
+  const nextMonth = () => {
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear(y => y + 1);
+    } else {
+      setSelectedMonth(m => m + 1);
+    }
+  };
+
+  // Open arsip view
+  const openReportView = (date: string, type: string) => {
+    const d = new Date(date);
+    const monthName = BULAN[d.getMonth()];
+    const year = d.getFullYear();
+    window.open(`/laporan/arsip/view?date=${date}&year=${year}&month=${monthName}&type=${type}`, '_blank');
+  };
+
+  // Navigate to live report
+  const navigateToReport = (path: string) => {
+    window.location.href = path;
+  };
 
   return (
-    <div className="max-w-6xl mx-auto w-full pb-24 animate-in fade-in duration-500">
-      
-      {/* Upper Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm print:hidden">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 max-w-6xl mx-auto animate-fade-in">
+
+      {/* Header */}
+      <PageHeader
+        title="Pengarsipan Laporan (End of Day)"
+        description="Semua laporan keuangan dikunci otomatis setiap akhir hari kerja (18:00 WITA). Terhubung langsung dengan 4 laporan utama."
+        icon={Archive}
+      />
+
+      {/* Info Banner — End of Day */}
+      <Card className="p-4 bg-indigo-50/50 border-indigo-100">
+        <div className="flex items-start gap-3">
+          <Clock className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
           <div>
-            <h1 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Pengarsipan Laporan</h1>
-            <p className="text-xs text-slate-400 font-semibold italic">Arsip Laporan Keuangan per Tahun & per Bulan</p>
+            <p className="text-xs font-bold text-indigo-800 uppercase tracking-wide">Metode Pengarsipan: End of Day</p>
+            <p className="text-xs text-indigo-600 mt-1 leading-relaxed">
+              Setiap hari kerja pukul <strong>18:00 WITA</strong>, sistem otomatis mengunci (lock) seluruh laporan keuangan hari tersebut.
+              Laporan yang terkunci meliputi: <strong>Neraca</strong>, <strong>Laba Rugi</strong>, <strong>Arus Kas</strong>, dan <strong>Perubahan Modal</strong>.
+              Data yang sudah terkunci tidak dapat diubah.
+            </p>
           </div>
         </div>
+      </Card>
 
-        {/* Premium Year Selector Tabs */}
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-          {years.map(year => (
-            <button
-              key={year}
-              onClick={() => setSelectedYear(year)}
-              className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${selectedYear === year ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              {year}
+      {/* Month & Year Navigator */}
+      <Card className="p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Month Nav */}
+          <div className="flex items-center gap-3">
+            <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-xl transition-all">
+              <ChevronLeft className="w-5 h-5 text-slate-500" />
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Year Statistics Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 print:hidden">
-        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Bulan Terarsip</span>
-            <span className="text-xl font-bold text-indigo-600 mt-1 block">{stats.finalizedCount} / 12 Bulan</span>
-          </div>
-          <span className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-            <Folder className="w-5 h-5" />
-          </span>
-        </div>
-
-        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Akumulasi Pendapatan Tahun {selectedYear}</span>
-            <span className="text-xl font-bold text-emerald-600 mt-1 block">{formatCurrency(stats.totalRevenue)}</span>
-          </div>
-          <span className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-            <TrendingUp className="w-5 h-5" />
-          </span>
-        </div>
-
-        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Akumulasi Laba Bersih Tahun {selectedYear}</span>
-            <span className="text-xl font-bold text-indigo-600 mt-1 block">{formatCurrency(stats.totalProfit)}</span>
-          </div>
-          <span className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-            <BarChart3 className="w-5 h-5" />
-          </span>
-        </div>
-      </div>
-
-      {/* Month Folders Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:hidden">
-        {selectedYearData.map(archive => {
-          const isFinalized = archive.status === 'FINALIZED';
-          return (
-            <div 
-              key={archive.monthIndex}
-              className={`bg-white border rounded-3xl p-6 shadow-sm transition-all relative overflow-hidden group ${isFinalized ? 'border-indigo-100 hover:shadow-md' : 'border-slate-200/60 hover:border-slate-300 opacity-90'}`}
-            >
-              {/* Folder Status Header */}
-              <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <span className={`p-2.5 rounded-xl ${isFinalized ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>
-                    {isFinalized ? <FolderOpen className="w-5 h-5" /> : <Folder className="w-5 h-5" />}
-                  </span>
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight">{archive.monthName}</h3>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest block mt-0.5">Tahun {selectedYear}</span>
-                  </div>
-                </div>
-
-                <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${isFinalized ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                  {isFinalized ? (
-                    <><Lock className="w-2.5 h-2.5" /> Terarsip</>
-                  ) : (
-                    <><Unlock className="w-2.5 h-2.5" /> Draft</>
-                  )}
-                </span>
-              </div>
-
-              {/* Mini Financial Summary */}
-              {isFinalized ? (
-                <div className="grid grid-cols-2 gap-2 mb-5 bg-slate-50 p-3 rounded-2xl">
-                  <div>
-                    <span className="text-[8px] text-slate-400 font-semibold block uppercase tracking-wider">Pendapatan</span>
-                    <span className="text-[10px] font-bold text-emerald-600 block">{formatCurrency(archive.revenue)}</span>
-                  </div>
-                  <div>
-                    <span className="text-[8px] text-slate-400 font-semibold block uppercase tracking-wider">Laba Bersih</span>
-                    <span className="text-[10px] font-bold text-indigo-600 block">{formatCurrency(archive.netProfit)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-2 mb-5 bg-amber-50/20 rounded-2xl border border-dashed border-amber-100">
-                  <p className="text-[9px] text-amber-700 font-semibold uppercase">Laporan belum difinalisasi</p>
-                </div>
-              )}
-
-              {/* 4 Report Links Access Grid */}
-              <div className="space-y-2">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Buka Laporan Arsip:</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=NERACA`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
-                  >
-                    📊 Neraca
-                  </button>
-                  <button 
-                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=LABA_RUGI`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
-                  >
-                    📈 Laba Rugi
-                  </button>
-                  <button 
-                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=ARUS_KAS`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
-                  >
-                    💸 Arus Kas
-                  </button>
-                  <button 
-                    onClick={() => window.open(`/laporan/arsip/view?year=${selectedYear}&month=${archive.monthName}&type=MODAL`, '_blank')}
-                    className="flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-xl text-[10px] font-bold uppercase transition-all"
-                  >
-                    🔄 Modal
-                  </button>
-                </div>
-              </div>
-
+            <div className="text-center min-w-[180px]">
+              <h2 className="text-lg font-black text-slate-800 tracking-tight">
+                {BULAN[selectedMonth]} {selectedYear}
+              </h2>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">
+                {stats.locked} hari terkunci · {stats.open} hari terbuka
+              </p>
             </div>
-          );
-        })}
+            <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-xl transition-all">
+              <ChevronRight className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
+
+          {/* Year Tabs + Search */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Cari tanggal..."
+                value={searchDate}
+                onChange={e => setSearchDate(e.target.value)}
+                className="pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 w-36"
+              />
+            </div>
+            <div className="flex bg-slate-100 p-1 rounded-xl gap-0.5">
+              {years.map(year => (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    selectedYear === year
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Hari Kerja</span>
+            <span className="text-xl font-black text-slate-800 mt-1 block">{stats.totalDays}</span>
+          </div>
+          <span className="p-2.5 bg-slate-100 text-slate-500 rounded-xl">
+            <Calendar className="w-4 h-4" />
+          </span>
+        </Card>
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Terkunci</span>
+            <span className="text-xl font-black text-emerald-600 mt-1 block">{stats.locked}</span>
+          </div>
+          <span className="p-2.5 bg-emerald-50 text-emerald-500 rounded-xl">
+            <Lock className="w-4 h-4" />
+          </span>
+        </Card>
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Terbuka</span>
+            <span className="text-xl font-black text-amber-600 mt-1 block">{stats.open}</span>
+          </div>
+          <span className="p-2.5 bg-amber-50 text-amber-500 rounded-xl">
+            <Clock className="w-4 h-4" />
+          </span>
+        </Card>
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Laporan API</span>
+            <span className="text-xl font-black text-indigo-600 mt-1 block">{stats.apiReportsCount}</span>
+          </div>
+          <span className="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl">
+            <FileText className="w-4 h-4" />
+          </span>
+        </Card>
       </div>
 
+      {/* Loading */}
+      {isLoading && (
+        <Card className="p-10 flex flex-col items-center justify-center gap-2">
+          <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+          <p className="text-xs text-slate-500 font-semibold">Memuat data arsip...</p>
+        </Card>
+      )}
+
+      {/* Daily Archive Table */}
+      {!isLoading && (
+        <Card className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Archive className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                Arsip Harian — {BULAN[selectedMonth]} {selectedYear}
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
+              {filteredArchives.length} hari
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left">
+                  <th className="px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tanggal</th>
+                  <th className="px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
+                  <th className="px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Neraca</th>
+                  <th className="px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Laba Rugi</th>
+                  <th className="px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Arus Kas</th>
+                  <th className="px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Perubahan Modal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredArchives.map((archive) => {
+                  const isLocked = archive.status === 'LOCKED';
+                  return (
+                    <tr
+                      key={archive.date}
+                      className={`transition-colors ${isLocked ? 'hover:bg-slate-50/70' : 'hover:bg-amber-50/30 bg-amber-50/10'}`}
+                    >
+                      {/* Date */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black ${
+                            isLocked ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                          }`}>
+                            {new Date(archive.date).getDate()}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">{archive.dayName}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{archive.displayDate}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-3.5">
+                        {isLocked ? (
+                          <div>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[9px] font-bold uppercase">
+                              <Lock className="w-2.5 h-2.5" /> Terkunci
+                            </span>
+                            <p className="text-[9px] text-slate-400 mt-1">
+                              {archive.lockedAt}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[9px] font-bold uppercase">
+                              <Clock className="w-2.5 h-2.5" /> Terbuka
+                            </span>
+                            {new Date(archive.date) <= today && (
+                              <button
+                                onClick={() => handleLockDay(archive.date)}
+                                className="block text-[8px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline uppercase tracking-wider text-left"
+                              >
+                                Kunci Hari (EOD)
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Neraca */}
+                      <td className="px-5 py-3.5 text-center">
+                        {isLocked && archive.reports.neraca.available ? (
+                          <button
+                            onClick={() => openReportView(archive.date, 'NERACA')}
+                            className="inline-flex flex-col items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all group w-full"
+                          >
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase">
+                              <BarChart3 className="w-3 h-3" /> Lihat
+                            </span>
+                            {archive.reports.neraca.totalAset && (
+                              <span className="text-[8px] text-blue-400 font-mono">
+                                {formatCurrency(archive.reports.neraca.totalAset)}
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 font-semibold">—</span>
+                        )}
+                      </td>
+
+                      {/* Laba Rugi */}
+                      <td className="px-5 py-3.5 text-center">
+                        {isLocked && archive.reports.labaRugi.available ? (
+                          <button
+                            onClick={() => openReportView(archive.date, 'LABA_RUGI')}
+                            className="inline-flex flex-col items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-all group w-full"
+                          >
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase">
+                              <TrendingUp className="w-3 h-3" /> Lihat
+                            </span>
+                            {archive.reports.labaRugi.labaBersih && (
+                              <span className={`text-[8px] font-mono ${archive.reports.labaRugi.labaBersih >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {formatCurrency(archive.reports.labaRugi.labaBersih)}
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 font-semibold">—</span>
+                        )}
+                      </td>
+
+                      {/* Arus Kas */}
+                      <td className="px-5 py-3.5 text-center">
+                        {isLocked && archive.reports.arusKas.available ? (
+                          <button
+                            onClick={() => openReportView(archive.date, 'ARUS_KAS')}
+                            className="inline-flex flex-col items-center gap-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all group w-full"
+                          >
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase">
+                              <DollarSign className="w-3 h-3" /> Lihat
+                            </span>
+                            {archive.reports.arusKas.kasAkhir && (
+                              <span className="text-[8px] text-amber-400 font-mono">
+                                {formatCurrency(archive.reports.arusKas.kasAkhir)}
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 font-semibold">—</span>
+                        )}
+                      </td>
+
+                      {/* Perubahan Modal */}
+                      <td className="px-5 py-3.5 text-center">
+                        {isLocked && archive.reports.perubahanModal.available ? (
+                          <button
+                            onClick={() => openReportView(archive.date, 'MODAL')}
+                            className="inline-flex flex-col items-center gap-1 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-all group w-full"
+                          >
+                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase">
+                              <RefreshCw className="w-3 h-3" /> Lihat
+                            </span>
+                            {archive.reports.perubahanModal.modalAkhir && (
+                              <span className="text-[8px] text-purple-400 font-mono">
+                                {formatCurrency(archive.reports.perubahanModal.modalAkhir)}
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 font-semibold">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredArchives.length === 0 && (
+            <div className="p-10 flex flex-col items-center justify-center gap-2">
+              <Archive className="w-8 h-8 text-slate-300" />
+              <p className="text-xs text-slate-400 font-semibold">Tidak ada data arsip ditemukan</p>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Quick Links — Tautan ke Laporan Live */}
+      <Card className="p-5">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+          Tautan Cepat ke Halaman Laporan Aktif
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button
+            onClick={() => navigateToReport('/laporan/neraca')}
+            className="flex flex-col items-center gap-2 p-4 bg-blue-50/50 hover:bg-blue-100/70 border border-blue-100 rounded-2xl transition-all group"
+          >
+            <BarChart3 className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-bold text-blue-700 uppercase">Neraca</span>
+          </button>
+          <button
+            onClick={() => navigateToReport('/laporan/laba-rugi')}
+            className="flex flex-col items-center gap-2 p-4 bg-emerald-50/50 hover:bg-emerald-100/70 border border-emerald-100 rounded-2xl transition-all group"
+          >
+            <TrendingUp className="w-5 h-5 text-emerald-500 group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-bold text-emerald-700 uppercase">Laba Rugi</span>
+          </button>
+          <button
+            onClick={() => navigateToReport('/laporan/arus-kas')}
+            className="flex flex-col items-center gap-2 p-4 bg-amber-50/50 hover:bg-amber-100/70 border border-amber-100 rounded-2xl transition-all group"
+          >
+            <DollarSign className="w-5 h-5 text-amber-500 group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-bold text-amber-700 uppercase">Arus Kas</span>
+          </button>
+          <button
+            onClick={() => navigateToReport('/laporan/perubahan-modal')}
+            className="flex flex-col items-center gap-2 p-4 bg-purple-50/50 hover:bg-purple-100/70 border border-purple-100 rounded-2xl transition-all group"
+          >
+            <RefreshCw className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-bold text-purple-700 uppercase">Perubahan Modal</span>
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }

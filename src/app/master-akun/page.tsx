@@ -5,14 +5,20 @@ import { useAccountingStore } from "@/hooks/useAccountingStore";
 import { AccountType, generateAccountCode, formatIDR } from "@/lib/accounting";
 import { PageHeader, Card, Btn } from "@/components/finance-ui";
 import { Layers, Plus, Save, X, ChevronRight, ChevronDown, Trash2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MasterAkunPage() {
   const { accounts, transactions, reports, addAccount, deleteAccount, ready } = useAccountingStore();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState({ name: "", type: "aset" as AccountType, parentId: "", isCash: false, isDrawing: false, isFixedAsset: false });
 
   if (!ready) return null;
+
+  const role = user?.role?.toLowerCase() || "";
+  const isCreatable = role === "admin" || role === "teller";
+  const isDeletable = role === "admin" || role === "teller";
 
   const { balances } = reports;
 
@@ -96,13 +102,19 @@ export default function MasterAkunPage() {
                 {node.type}
               </span>
               <span className="font-bold text-slate-800 w-36 text-right text-sm tabular-nums">{formatIDR(balances[node.id] || 0)}</span>
-              <button
-                onClick={() => deleteAccount(node.id)}
-                className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded opacity-0 group-hover:opacity-100 transition-all"
-                title="Hapus akun"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {isDeletable && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Apakah Anda yakin ingin menghapus akun "${node.name}" (${node.code})?`)) {
+                      deleteAccount(node.id);
+                    }
+                  }}
+                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded opacity-40 group-hover:opacity-100 focus:opacity-100 hover:opacity-100 transition-all"
+                  title="Hapus akun"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
           {hasKids && open && renderTree(kids, level + 1)}
@@ -122,13 +134,15 @@ export default function MasterAkunPage() {
         description="Kelola bagan akun dengan sub-akun bertingkat. Kode akun otomatis. Saldo parent = roll-up sub akun."
         icon={Layers}
         action={
-          <Btn onClick={() => setShowForm(!showForm)} variant={showForm ? "secondary" : "primary"}>
-            {showForm ? <><X className="w-4 h-4" /> Tutup</> : <><Plus className="w-4 h-4" /> Tambah Akun</>}
-          </Btn>
+          isCreatable && (
+            <Btn onClick={() => setShowForm(!showForm)} variant={showForm ? "secondary" : "primary"}>
+              {showForm ? <><X className="w-4 h-4" /> Tutup</> : <><Plus className="w-4 h-4" /> Tambah Akun</>}
+            </Btn>
+          )
         }
       />
 
-      {showForm && (
+      {showForm && isCreatable && (
         <Card className="p-6 border-indigo-200 shadow-md animate-slide-in-up">
           <h2 className="text-lg font-bold text-slate-800 mb-5">Form Tambah Akun / Sub-Akun</h2>
           <form onSubmit={handleSubmit} className="space-y-5">

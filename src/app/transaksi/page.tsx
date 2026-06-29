@@ -2,18 +2,27 @@
 
 import { useState } from "react";
 import { useAccountingStore } from "@/hooks/useAccountingStore";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatIDR } from "@/lib/accounting";
 import { PageHeader, Card, Btn } from "@/components/finance-ui";
 import { ArrowRightLeft, Plus, Save, X, Trash2 } from "lucide-react";
 
 export default function TransaksiPage() {
-  const { accounts, transactions, reports, addTransaction, deleteTransaction, ready } = useAccountingStore();
+  const { accounts, transactions, addTransaction, deleteTransaction, ready, loading } = useAccountingStore();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ date: today(), description: "", debitAccountId: "", creditAccountId: "", amount: "" });
 
   if (!ready) return null;
 
+  const role = user?.role?.toLowerCase() || "";
+  const isTeller = role === "teller";
+
   const sorted = [...accounts].sort((a, b) => a.code.localeCompare(b.code));
+
+  // Only allow postable accounts (leaf accounts) to be selected for transactions
+  const parentIds = new Set(accounts.filter(a => a.parentId).map(a => a.parentId));
+  const sortedLeafAccounts = sorted.filter(a => !parentIds.has(a.id));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,18 +45,24 @@ export default function TransaksiPage() {
     <div className="space-y-6 max-w-6xl mx-auto animate-fade-in">
       <PageHeader
         title="Manajemen Transaksi"
-        description="Catat jurnal double-entry. Setiap transaksi otomatis memperbarui seluruh laporan."
+        description={
+          isTeller
+            ? "Catat jurnal double-entry. Setiap transaksi yang Anda ajukan memerlukan persetujuan Manager sebelum dibukukan."
+            : "Daftar jurnal double-entry perusahaan."
+        }
         icon={ArrowRightLeft}
         action={
-          <Btn onClick={() => setShowForm(!showForm)} variant={showForm ? "secondary" : "primary"}>
-            {showForm ? <><X className="w-4 h-4" /> Tutup</> : <><Plus className="w-4 h-4" /> Input Transaksi</>}
-          </Btn>
+          isTeller && (
+            <Btn onClick={() => setShowForm(!showForm)} variant={showForm ? "secondary" : "primary"}>
+              {showForm ? <><X className="w-4 h-4" /> Tutup</> : <><Plus className="w-4 h-4" /> Input Transaksi</>}
+            </Btn>
+          )
         }
       />
 
-      {showForm && (
+      {showForm && isTeller && (
         <Card className="p-6 border-indigo-200 shadow-md animate-slide-in-up">
-          <h2 className="text-lg font-bold text-slate-800 mb-5">Jurnal Transaksi Baru</h2>
+          <h2 className="text-lg font-bold text-slate-800 mb-5">Jurnal Transaksi Baru (Menunggu Approval)</h2>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Tanggal Transaksi">
@@ -62,18 +77,20 @@ export default function TransaksiPage() {
               <Field label="Akun Debit" labelColor="text-emerald-600">
                 <select required value={form.debitAccountId} onChange={e => setForm({ ...form, debitAccountId: e.target.value })} className="input-base bg-emerald-50/50 focus:ring-emerald-500">
                   <option value="">— Pilih Akun Debit —</option>
-                  {sorted.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+                  {sortedLeafAccounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
                 </select>
               </Field>
               <Field label="Akun Kredit" labelColor="text-rose-600">
                 <select required value={form.creditAccountId} onChange={e => setForm({ ...form, creditAccountId: e.target.value })} className="input-base bg-rose-50/50 focus:ring-rose-500">
                   <option value="">— Pilih Akun Kredit —</option>
-                  {sorted.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+                  {sortedLeafAccounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
                 </select>
               </Field>
             </div>
             <div className="flex justify-end pt-2">
-              <Btn type="submit"><Save className="w-4 h-4" /> Simpan Jurnal</Btn>
+              <Btn type="submit" disabled={loading}>
+                <Save className="w-4 h-4" /> {loading ? "Menyimpan..." : "Kirim Pengajuan Jurnal"}
+              </Btn>
             </div>
           </form>
         </Card>
@@ -89,16 +106,19 @@ export default function TransaksiPage() {
                 <th className="px-5 py-3.5 font-bold text-emerald-600 text-xs uppercase tracking-wider">Debit</th>
                 <th className="px-5 py-3.5 font-bold text-rose-600 text-xs uppercase tracking-wider">Kredit</th>
                 <th className="px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">Nominal</th>
+                <th className="px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider text-center">Status</th>
                 <th className="px-5 py-3.5 w-12" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {transactions.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-10 text-center text-slate-400">Belum ada data transaksi.</td></tr>
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-400">Belum ada data transaksi.</td></tr>
               )}
               {[...transactions].reverse().map(trx => {
                 const dAcc = accounts.find(a => a.id === trx.debitAccountId);
                 const cAcc = accounts.find(a => a.id === trx.creditAccountId);
+                const status = trx.status || "POSTED";
+                
                 return (
                   <tr key={trx.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-5 py-3 text-slate-500">{new Date(trx.date).toLocaleDateString("id-ID")}</td>
@@ -114,10 +134,15 @@ export default function TransaksiPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right font-bold text-slate-800">{formatIDR(trx.amount)}</td>
+                    <td className="px-5 py-3 text-center">
+                      <StatusBadge status={status} />
+                    </td>
                     <td className="px-3 py-3 text-center">
-                      <button onClick={() => deleteTransaction(trx.id)} className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" title="Hapus">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {isTeller && (status.toUpperCase() === "PENDING" || status.toUpperCase() === "DRAFT" || status.toUpperCase() === "REJECTED") && (
+                        <button onClick={() => deleteTransaction(trx.id)} className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" title="Hapus">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -127,6 +152,37 @@ export default function TransaksiPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+// ── StatusBadge ─────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+  const s = status.toUpperCase();
+  if (s === "POSTED" || s === "APPROVED") {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+        POSTED
+      </span>
+    );
+  }
+  if (s === "PENDING") {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-850 border border-amber-200">
+        PENDING
+      </span>
+    );
+  }
+  if (s === "REJECTED") {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 border border-rose-200">
+        REJECTED
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+      {s}
+    </span>
   );
 }
 

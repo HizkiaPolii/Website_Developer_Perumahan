@@ -24,7 +24,7 @@ export default function UsersPage() {
   const router = useRouter();
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const { getAll, delete: deleteUser, update: updateUser, loading, error: hookError } = useUsers();
-  
+
   const [users, setUsers] = useState<User[]>([]);
   const [filterRole, setFilterRole] = useState<Role | "All">("All");
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,7 +46,6 @@ export default function UsersPage() {
             isActive: user.isActive !== undefined ? user.isActive : true
           }));
           setUsers(normalizedUsers);
-          addToast(`${data.length} users berhasil dimuat`, 'success');
         } else {
           setUsers([]);
         }
@@ -167,6 +166,7 @@ export default function UsersPage() {
       "Manager": "bg-indigo-100 text-indigo-700 border-indigo-300 font-semibold",
       "Owner": "bg-purple-100 text-purple-700 border-purple-300 font-semibold",
       "Staf": "bg-amber-100 text-amber-700 border-amber-300 font-semibold",
+      "Teller": "bg-green-100 text-green-700 border-green-300 font-semibold",
     };
     return colors[role];
   };
@@ -177,6 +177,7 @@ export default function UsersPage() {
       "Manager": "👔",
       "Owner": "👑",
       "Staf": "👷",
+      "Teller": "💵"
     };
     return icons[role];
   };
@@ -274,11 +275,10 @@ export default function UsersPage() {
               <button
                 key={role}
                 onClick={() => setFilterRole(role as Role | "All")}
-                className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition-all ${
-                  filterRole === role
-                    ? "bg-white text-indigo-600 shadow-xs"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
+                className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition-all ${filterRole === role
+                  ? "bg-white text-indigo-600 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900"
+                  }`}
               >
                 {role}
               </button>
@@ -310,7 +310,7 @@ export default function UsersPage() {
             <tbody className="divide-y divide-slate-100">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user, index) => (
-                  <tr key={user.id} className="hover:bg-slate-50/50 transition-all duration-200 animate-slide-in-up" style={{animationDelay: `${index * 30}ms`}}>
+                  <tr key={user.id} className="hover:bg-slate-50/50 transition-all duration-200 animate-slide-in-up" style={{ animationDelay: `${index * 30}ms` }}>
                     <td className="p-4 text-xs font-bold text-indigo-600">{user.id}</td>
                     <td className="p-4 font-semibold text-slate-900">{user.name}</td>
                     <td className="p-4 text-slate-600 text-sm">{user.email}</td>
@@ -321,11 +321,10 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                        user.isActive 
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                          : "bg-slate-100 text-slate-500 border-slate-200"
-                      }`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${user.isActive
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-slate-100 text-slate-500 border-slate-200"
+                        }`}>
                         <span className={`w-2 h-2 rounded-full ${user.isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
                         {user.isActive ? "Aktif" : "Nonaktif"}
                       </span>
@@ -339,11 +338,10 @@ export default function UsersPage() {
                       </button>
                       <button
                         onClick={() => handleToggleStatus(user.id, user.isActive)}
-                        className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-all duration-200 flex items-center gap-1 hover:scale-105 ${
-                          user.isActive 
-                            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" 
-                            : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                        }`}
+                        className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-all duration-200 flex items-center gap-1 hover:scale-105 ${user.isActive
+                          ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          }`}
                       >
                         {user.isActive ? "Nonaktifkan" : "Aktifkan"}
                       </button>
@@ -383,7 +381,7 @@ export default function UsersPage() {
         <div className="lg:hidden divide-y divide-slate-100">
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user, index) => (
-              <div key={user.id} className="p-4 hover:bg-slate-50 transition-all duration-200 animate-slide-in-right" style={{animationDelay: `${index * 30}ms`}}>
+              <div key={user.id} className="p-4 hover:bg-slate-50 transition-all duration-200 animate-slide-in-right" style={{ animationDelay: `${index * 30}ms` }}>
                 <div className="space-y-3">
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2">
@@ -395,11 +393,10 @@ export default function UsersPage() {
                       <span className={`inline-block px-2.5 py-0.5 rounded-lg text-[10px] font-bold border whitespace-nowrap transition-all duration-300 ${getRoleColor(user.role)}`}>
                         {getRoleIcon(user.role)} {user.role}
                       </span>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${
-                        user.isActive 
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                          : "bg-slate-100 text-slate-500 border-slate-200"
-                      }`}>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${user.isActive
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-slate-100 text-slate-500 border-slate-200"
+                        }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${user.isActive ? "bg-emerald-500" : "bg-slate-400"}`} />
                         {user.isActive ? "Aktif" : "Nonaktif"}
                       </span>
@@ -428,11 +425,10 @@ export default function UsersPage() {
                     </button>
                     <button
                       onClick={() => handleToggleStatus(user.id, user.isActive)}
-                      className={`flex-1 text-xs font-bold px-2 py-1.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 ${
-                        user.isActive 
-                          ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" 
-                          : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                      }`}
+                      className={`flex-1 text-xs font-bold px-2 py-1.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 ${user.isActive
+                        ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        }`}
                     >
                       {user.isActive ? "Suspend" : "Aktifkan"}
                     </button>

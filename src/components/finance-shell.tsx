@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ArrowRightLeft, Layers, Wallet,
   TrendingUp, Scale, CircleDollarSign, LogOut, Menu, X,
-  Loader2, CheckCircle, Users, FileText, Settings, Archive, ShieldAlert, type LucideIcon
+  Loader2, CheckCircle, Users, FileText, Settings, Archive, ShieldAlert, BookOpen, type LucideIcon
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import SessionWarningModal from "./SessionWarningModal";
@@ -56,9 +57,11 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
     // Rules matching pathname prefix to allowed roles
     const rules = [
       { prefix: "/users", allowed: ["admin"] },
-      { prefix: "/transaksi", allowed: ["manager"] },
-      { prefix: "/master-akun", allowed: ["manager"] },
-      { prefix: "/laporan", allowed: ["manager", "owner"] },
+      { prefix: "/transaksi/approval", allowed: ["manager"] },
+      { prefix: "/transaksi", allowed: ["teller", "manager", "owner"] },
+      { prefix: "/jurnal-umum", allowed: ["teller", "manager", "owner"] },
+      { prefix: "/master-akun", allowed: ["teller"] },
+      { prefix: "/laporan", allowed: ["teller", "manager", "owner"] },
       { prefix: "/approval", allowed: ["staf", "manager", "owner"] },
       { prefix: "/activity-log", allowed: ["admin", "owner"] },
     ];
@@ -92,30 +95,32 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
     {
       label: "Utama",
       items: [
-        { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["Admin", "Manager", "Owner", "Staf"] },
+        { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["Admin", "Manager", "Owner", "Staf", "Teller"] },
       ],
     },
     {
       label: "Keuangan",
       items: [
-        { name: "Transaksi", href: "/transaksi", icon: ArrowRightLeft, roles: ["Manager"] },
-        { name: "Master Akun", href: "/master-akun", icon: Layers, roles: ["Manager"] },
+        { name: "Transaksi", href: "/transaksi", icon: ArrowRightLeft, roles: ["Teller", "Manager", "Owner"] },
+        { name: "Jurnal Umum", href: "/jurnal-umum", icon: BookOpen, roles: ["Teller", "Manager", "Owner"] },
+        { name: "Master Akun", href: "/master-akun", icon: Layers, roles: ["Teller"] },
       ],
     },
     {
       label: "Laporan",
       items: [
-        { name: "Arus Kas", href: "/laporan/arus-kas", icon: Wallet, roles: ["Manager", "Owner"] },
-        { name: "Laba Rugi", href: "/laporan/laba-rugi", icon: TrendingUp, roles: ["Manager", "Owner"] },
-        { name: "Perubahan Modal", href: "/laporan/perubahan-modal", icon: CircleDollarSign, roles: ["Manager", "Owner"] },
-        { name: "Neraca", href: "/laporan/neraca", icon: Scale, roles: ["Manager", "Owner"] },
-        { name: "Pengarsipan Laporan", href: "/laporan/arsip", icon: Archive, roles: ["Manager", "Owner"] },
+        { name: "Arus Kas", href: "/laporan/arus-kas", icon: Wallet, roles: ["Teller", "Manager", "Owner"] },
+        { name: "Laba Rugi", href: "/laporan/laba-rugi", icon: TrendingUp, roles: ["Teller", "Manager", "Owner"] },
+        { name: "Perubahan Modal", href: "/laporan/perubahan-modal", icon: CircleDollarSign, roles: ["Teller", "Manager", "Owner"] },
+        { name: "Neraca", href: "/laporan/neraca", icon: Scale, roles: ["Teller", "Manager", "Owner"] },
+        { name: "Pengarsipan Laporan", href: "/laporan/arsip", icon: Archive, roles: ["Teller", "Manager", "Owner"] },
       ],
     },
     {
       label: "Administrasi",
       items: [
-        { name: "Approval", href: "/approval", icon: CheckCircle, roles: ["Staf", "Manager", "Owner"] },
+        { name: "Approval Pengadaan", href: "/approval", icon: CheckCircle, roles: ["Staf", "Manager", "Owner"] },
+        { name: "Approval Transaksi", href: "/transaksi/approval", icon: CheckCircle, roles: ["Manager"] },
         { name: "Activity Log", href: "/activity-log", icon: FileText, roles: ["Admin", "Owner"] },
         { name: "Manajemen User", href: "/users", icon: Users, roles: ["Admin"] },
       ],
@@ -173,12 +178,19 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
   );
 
   const Brand = () => (
-    <div className="flex flex-col items-center justify-center h-20 border-b border-slate-800 shrink-0 gap-1">
-      <span className="text-2xl font-black tracking-wider">
-        <span className="text-indigo-400">PRO</span>
-        <span className="text-white">DEV</span>
-      </span>
-      <span className="text-[9px] font-semibold text-slate-600 tracking-[0.3em] uppercase">Housing Finance</span>
+    <div className="flex items-center justify-center gap-3 h-20 border-b border-slate-800 shrink-0 px-4">
+      <Image
+        src="/logo-br.png"
+        alt="B&R"
+        width={40}
+        height={40}
+        className="rounded-lg shrink-0"
+        unoptimized
+      />
+      <div>
+        <span className="text-lg font-black text-white tracking-tight">Bumi Residence</span>
+        <p className="text-[9px] font-semibold text-slate-600 tracking-[0.2em] uppercase">Finance System</p>
+      </div>
     </div>
   );
 
@@ -203,7 +215,7 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="text-[10px] text-slate-600 text-center font-semibold tracking-widest pt-3 border-t border-slate-800/60">
-            FINANCE SYSTEM v2.0
+            BUMI RESIDENCE v2.0
           </div>
         </div>
       </aside>
@@ -232,7 +244,7 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
             <button className="md:hidden text-slate-500 hover:text-slate-900 p-1" onClick={() => setOpen(true)}>
               <Menu className="w-6 h-6" />
             </button>
-            <h1 className="text-xs sm:text-sm font-bold tracking-[0.15em] text-slate-700 uppercase">Housing System</h1>
+            <h1 className="text-xs sm:text-sm font-bold tracking-[0.15em] text-slate-700 uppercase">B&R Bumi Residence</h1>
             <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-500 rounded hidden sm:inline-block">v2.0</span>
           </div>
           <div className="flex items-center gap-3">

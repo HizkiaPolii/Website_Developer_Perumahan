@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader, Home } from "lucide-react";
+import Image from "next/image";
+import { Eye, EyeOff, Loader, LogIn } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -50,7 +51,7 @@ export default function LoginPage() {
   // Show loading saat verifying session
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader className="w-8 h-8 animate-spin text-blue-500" />
           <p className="text-slate-400">Verifikasi sesi...</p>
@@ -60,39 +61,75 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
+    <div className="min-h-screen flex bg-[#2b3a47]">
+
+      {/* ── Left: Full Image (tidak terpotong) ──────────── */}
+      <div className="hidden lg:flex lg:flex-1 items-center justify-center p-8 relative">
+        <Image
+          src="/bg-login.jpeg"
+          alt="B&R Bumi Residence"
+          fill
+          className="object-contain object-center"
+          unoptimized
+          priority
+        />
       </div>
 
-      {/* Main Container */}
-      <div className="relative z-10 w-full max-w-md">
-        {/* Card */}
-        <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-8 space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2 mb-8">
+      {/* ── Right: Login Form ──────────────────────────── */}
+      <div className="w-full lg:w-[480px] xl:w-[520px] bg-slate-900 flex flex-col shrink-0 relative">
+
+        {/* Mobile background */}
+        <div className="absolute inset-0 lg:hidden overflow-hidden">
+          <Image
+            src="/bg-login.jpeg"
+            alt="B&R Bumi Residence"
+            fill
+            className="object-cover opacity-15"
+            unoptimized
+          />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-12 py-12">
+
+          {/* Logo & Branding */}
+          <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="bg-linear-to-br from-blue-500 to-indigo-600 p-3 rounded-xl">
-                <Home className="w-8 h-8 text-white" />
-              </div>
+              <Image
+                src="/logo-br.png"
+                alt="B&R Bumi Residence"
+                width={56}
+                height={56}
+                className="rounded-2xl shadow-lg shadow-black/30"
+                unoptimized
+              />
             </div>
-            <h1 className="text-3xl font-black text-white">Housing System</h1>
-            <p className="text-slate-400 text-sm">Sistem Manajemen Perusahaan Perumahan</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Bumi Residence
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              Sistem Pengelolaan Keuangan
+            </p>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-7">
+            <div className="flex-1 h-px bg-slate-800" />
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Masuk ke Sistem</span>
+            <div className="flex-1 h-px bg-slate-800" />
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             {/* Email Input */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-300">Email</label>
+              <label className="block text-sm font-semibold text-slate-300">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Masukkan email Anda"
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                placeholder="nama@bumiresidence.com"
+                className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                 disabled={loading}
                 required
               />
@@ -100,21 +137,21 @@ export default function LoginPage() {
 
             {/* Password Input */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-300">Password</label>
+              <label className="block text-sm font-semibold text-slate-300">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password Anda"
-                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                  placeholder="Masukkan password"
+                  className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                   disabled={loading}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                   disabled={loading}
                 >
                   {showPassword ? (
@@ -130,7 +167,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !email || !password}
-              className="w-full bg-linear-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 text-sm mt-2"
             >
               {loading ? (
                 <>
@@ -139,23 +176,21 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <span>Login</span>
+                  <LogIn className="w-4 h-4" />
+                  <span>Masuk ke Sistem</span>
                 </>
               )}
             </button>
           </form>
-
-          {/* Info Box */}
-          <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
-            <p className="text-sm text-blue-300">
-              Masukkan kredensial Anda untuk mengakses sistem manajemen perumahan.
-            </p>
-          </div>
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6 text-xs text-slate-500">
-          <p>© 2026 Housing System • Management System</p>
+        <div className="relative z-10 px-8 sm:px-12 lg:px-12 pb-6">
+          <div className="border-t border-slate-800 pt-5">
+            <p className="text-[11px] text-slate-600 text-center">
+              © 2026 B&R Bumi Residence • Sistem Pengelolaan Keuangan
+            </p>
+          </div>
         </div>
       </div>
     </div>

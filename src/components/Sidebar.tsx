@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, DollarSign, BarChart3, CheckCircle, Users, FileText, TrendingUp, Archive } from "lucide-react";
+import { LayoutDashboard, DollarSign, BarChart3, CheckCircle, Users, FileText, TrendingUp, Archive, BookOpen } from "lucide-react";
 
-type Role = "Admin" | "Manager" | "Owner" | "Staf";
+type Role = "Admin" | "Manager" | "Owner" | "Staf" | "Teller";
 
 interface User {
   id: string;
@@ -42,14 +42,16 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
   }, [role, user]);
 
   const menuItems = [
-    { label: "Dashboard", href: "/", roles: ["Admin", "Manager", "Owner", "Staf"], icon: LayoutDashboard },
-    { label: "Manajemen Transaksi", href: "/transactions", roles: ["Manager"], icon: TrendingUp },
-    { label: "Laporan Neraca", href: "/reports/balance-sheet", roles: ["Manager", "Owner"], icon: BarChart3 },
-    { label: "Laporan Laba Rugi", href: "/reports/income-statement", roles: ["Manager", "Owner"], icon: BarChart3 },
-    { label: "Laporan Arus Kas", href: "/reports/cash-flow", roles: ["Manager", "Owner"], icon: BarChart3 },
-    { label: "Laporan Perubahan Modal", href: "/reports/changes-in-equity", roles: ["Manager", "Owner"], icon: BarChart3 },
-    { label: "Pengarsipan Laporan", href: "/reports/archive", roles: ["Manager", "Owner"], icon: Archive },
-    { label: "Halaman Approval", href: "/approval", roles: ["Staf", "Manager", "Owner"], icon: CheckCircle },
+    { label: "Dashboard", href: "/", roles: ["Admin", "Manager", "Owner", "Staf", "Teller"], icon: LayoutDashboard },
+    { label: "Manajemen Transaksi", href: "/transaksi", roles: ["Teller", "Manager", "Owner"], icon: TrendingUp },
+    { label: "Jurnal Umum", href: "/jurnal-umum", roles: ["Teller", "Manager", "Owner"], icon: BookOpen },
+    { label: "Approval Transaksi", href: "/transaksi/approval", roles: ["Manager"], icon: CheckCircle },
+    { label: "Laporan Neraca", href: "/laporan/neraca", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Laba Rugi", href: "/laporan/laba-rugi", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Arus Kas", href: "/laporan/arus-kas", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Laporan Perubahan Modal", href: "/laporan/perubahan-modal", roles: ["Manager", "Owner"], icon: BarChart3 },
+    { label: "Pengarsipan Laporan", href: "/laporan/arsip", roles: ["Manager", "Owner"], icon: Archive },
+    { label: "Halaman Approval Pengadaan", href: "/approval", roles: ["Staf", "Manager", "Owner"], icon: CheckCircle },
     { label: "Manajemen User", href: "/users", roles: ["Admin"], icon: Users },
     { label: "Activity Log", href: "/activity-log", roles: ["Admin", "Owner"], icon: FileText },
   ];
@@ -67,10 +69,10 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
       {/* Branding */}
       <div className="p-8">
         <h1 className="text-2xl font-black tracking-tighter text-indigo-400">
-          PRO<span className="text-white">DEV</span>
+          Bumi <span className="text-white">Residence</span>
         </h1>
         <p className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase mt-1">
-          Finance Management
+          Housing Finance System
         </p>
       </div>
 

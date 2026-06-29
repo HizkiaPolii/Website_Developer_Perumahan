@@ -116,13 +116,13 @@ export default function PerubahanModalPage() {
           </div>
 
           {/* Ekuitas Akhir */}
-          <div className="mt-8">
-            <div className="bg-gradient-to-r from-indigo-900 to-slate-900 rounded-2xl p-6 shadow-xl flex flex-col sm:flex-row justify-between items-center gap-4 text-white print:bg-slate-100 print:text-slate-950 print:border print:border-slate-300 print:shadow-none">
-              <div>
-                <h4 className="text-sm font-semibold text-indigo-300 tracking-wider uppercase print:text-slate-600">Ekuitas Akhir</h4>
-                <p className="text-xs text-slate-400 mt-0.5 print:text-slate-500">Modal + Laba − Prive</p>
+          <div className="mt-8 border-t-2 border-slate-800">
+            <div className="px-5 py-4 bg-slate-50 flex justify-between items-center">
+              <div className="flex flex-col">
+                <span className="font-black text-slate-800 text-sm">EKUITAS AKHIR (MODAL AKHIR)</span>
+                <span className="text-[10px] text-slate-500 font-semibold mt-0.5">Modal Awal + Laba − Prive</span>
               </div>
-              <div className="text-3xl font-black tabular-nums print:text-slate-950">{formatIDR(ec.ekuitasAkhir)}</div>
+              <span className="text-xl font-black tabular-nums text-indigo-600">{formatIDR(ec.ekuitasAkhir)}</span>
             </div>
           </div>
         </div>

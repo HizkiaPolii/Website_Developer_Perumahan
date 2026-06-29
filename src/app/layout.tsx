@@ -7,7 +7,7 @@ import { ConfirmDialogProvider } from "@/contexts/ConfirmDialogContext";
 import { ApprovalProvider } from "@/contexts/ApprovalContext";
 
 export const metadata: Metadata = {
-  title: "PRODEV — Housing Finance System",
+  title: "Bumi Residence — Housing Finance System",
   description: "Sistem Informasi Pengelolaan Keuangan Developer Perumahan",
 };
 

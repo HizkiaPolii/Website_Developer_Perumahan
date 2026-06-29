@@ -24,6 +24,7 @@ export interface Transaction {
   debitAccountId: string;
   creditAccountId: string;
   amount: number;
+  status?: string;
 }
 
 // ─── Report Shapes ──────────────────────────────────────────────────
@@ -187,13 +188,16 @@ export function formatIDR(amount: number): string {
 // every number the UI needs.  Called once on every data change.
 
 export function buildReports(accounts: Account[], transactions: Transaction[]): Reports {
+  // Only process POSTED (or legacy undefined status) transactions in reports
+  const postedTrxs = transactions.filter(t => !t.status || t.status.toUpperCase() === 'POSTED');
+
   // 1) Compute leaf‑level balances (normal‑side aware)
   //    Aset & Beban  → debit increases (+), credit decreases (−)
   //    Kewajiban, Modal, Pendapatan → credit increases (+), debit decreases (−)
   const leafBalances: Record<string, number> = {};
   accounts.forEach(a => { leafBalances[a.id] = 0; });
 
-  transactions.forEach(trx => {
+  postedTrxs.forEach(trx => {
     const dAcc = accounts.find(a => a.id === trx.debitAccountId);
     const cAcc = accounts.find(a => a.id === trx.creditAccountId);
 
@@ -230,7 +234,7 @@ export function buildReports(accounts: Account[], transactions: Transaction[]): 
   // Aggregate net cash effect per counterpart account
   const counterpartMap: Record<string, { code: string; name: string; type: AccountType; isCash: boolean; isFixedAsset: boolean; amount: number }> = {};
 
-  transactions.forEach(trx => {
+  postedTrxs.forEach(trx => {
     const isDebitCash = cashIds.has(trx.debitAccountId);
     const isCreditCash = cashIds.has(trx.creditAccountId);
 

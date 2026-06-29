@@ -1,18 +1,44 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import {
-  PurchaseRequest,
-  ApprovalStatus,
-  CreateRequestInput,
-  getAllRequests,
-  createRequest as svcCreate,
-  approveByManager as svcApproveManager,
-  approveByOwner as svcApproveOwner,
-  rejectRequest as svcReject,
-  deleteRequest as svcDelete,
-  getStats as svcGetStats,
-} from "@/services/approval-service";
+import { usePurchaseRequests } from "@/hooks/useApiEndpoints";
+import { useAuth } from "@/contexts/AuthContext";
+
+export type ApprovalStatus = "Pending" | "ACC Manager" | "ACC Final" | "Tolak";
+
+export interface PurchaseRequest {
+  id: string;
+  dbId?: number;
+  item: string;
+  quantity: string;
+  amount: number;
+  requester: string;
+  requesterId: string;
+  department: string;
+  date: string;
+  status: ApprovalStatus;
+  description: string;
+  notaNumber?: string;
+  // Tracking
+  createdAt: string;
+  approvedByManager?: string;
+  approvedByManagerAt?: string;
+  approvedByOwner?: string;
+  approvedByOwnerAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+}
+
+export interface CreateRequestInput {
+  item: string;
+  quantity: string;
+  amount: number;
+  department: string;
+  description: string;
+  requester: string;
+  requesterId: string;
+}
 
 interface ApprovalStats {
   total: number;
@@ -30,11 +56,11 @@ interface ApprovalContextType {
   isLoading: boolean;
 
   // Actions
-  createRequest: (input: CreateRequestInput) => PurchaseRequest;
-  approveByManager: (id: string, managerName: string) => PurchaseRequest | null;
-  approveByOwner: (id: string, ownerName: string) => PurchaseRequest | null;
-  rejectRequest: (id: string, rejectorName: string, reason?: string) => PurchaseRequest | null;
-  deleteRequest: (id: string) => boolean;
+  createRequest: (input: CreateRequestInput) => Promise<PurchaseRequest | null>;
+  approveByManager: (id: string, managerName: string) => Promise<PurchaseRequest | null>;
+  approveByOwner: (id: string, ownerName: string) => Promise<PurchaseRequest | null>;
+  rejectRequest: (id: string, rejectorName: string, reason?: string) => Promise<PurchaseRequest | null>;
+  deleteRequest: (id: string) => Promise<boolean>;
   refreshData: () => void;
 
   // Filtered views
@@ -48,69 +74,145 @@ interface ApprovalContextType {
 const ApprovalContext = createContext<ApprovalContextType | undefined>(undefined);
 
 export function ApprovalProvider({ children }: { children: React.ReactNode }) {
+  const { getAll, create, approveManager, approveOwner, reject, delete: deleteApi } = usePurchaseRequests();
+  const { isAuthenticated, token } = useAuth();
+  
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [stats, setStats] = useState<ApprovalStats>({
     total: 0, pending: 0, accManager: 0, accFinal: 0, rejected: 0, totalAmount: 0, approvedAmount: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load data from localStorage
-  const refreshData = useCallback(() => {
-    const data = getAllRequests();
-    setRequests(data);
-    setStats(svcGetStats());
+  // Recalculate stats whenever requests list changes
+  const calculateStats = useCallback((list: PurchaseRequest[]) => {
+    const total = list.length;
+    const pending = list.filter(r => r.status === "Pending").length;
+    const accManager = list.filter(r => r.status === "ACC Manager").length;
+    const accFinal = list.filter(r => r.status === "ACC Final").length;
+    const rejected = list.filter(r => r.status === "Tolak").length;
+    const totalAmount = list.reduce((sum, r) => sum + r.amount, 0);
+    const approvedAmount = list.filter(r => r.status === "ACC Final").reduce((sum, r) => sum + r.amount, 0);
+
+    setStats({
+      total,
+      pending,
+      accManager,
+      accFinal,
+      rejected,
+      totalAmount,
+      approvedAmount,
+    });
   }, []);
+
+  const refreshData = useCallback(async () => {
+    if (!isAuthenticated || !token) {
+      setRequests([]);
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await getAll();
+      setRequests(data);
+      calculateStats(data);
+    } catch (err) {
+      console.error("Failed to load purchase requests from API:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getAll, isAuthenticated, token, calculateStats]);
 
   // Initial load
   useEffect(() => {
     refreshData();
-    setIsLoading(false);
   }, [refreshData]);
 
-  // Listen for cross-component/tab changes
+  // Listen to custom events for data updates (cross-component coordination)
   useEffect(() => {
     const handler = () => refreshData();
     window.addEventListener("approvalDataChanged", handler);
-    window.addEventListener("storage", (e) => {
-      if (e.key === "purchaseRequests") handler();
-    });
     return () => {
       window.removeEventListener("approvalDataChanged", handler);
-      // Note: storage listener cleanup would need a ref, but this is fine for our use case
     };
   }, [refreshData]);
 
   // ==================== Actions ====================
 
-  const createRequestAction = useCallback((input: CreateRequestInput): PurchaseRequest => {
-    const result = svcCreate(input);
-    refreshData();
-    return result;
-  }, [refreshData]);
+  const createRequestAction = useCallback(async (input: CreateRequestInput): Promise<PurchaseRequest | null> => {
+    try {
+      const result = await create({
+        item: input.item,
+        quantity: input.quantity,
+        amount: input.amount,
+        department: input.department,
+        description: input.description,
+      });
+      if (result) {
+        await refreshData();
+        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
+      }
+      return result;
+    } catch (err) {
+      console.error("Gagal membuat request:", err);
+      return null;
+    }
+  }, [create, refreshData]);
 
-  const approveByManagerAction = useCallback((id: string, managerName: string): PurchaseRequest | null => {
-    const result = svcApproveManager(id, managerName);
-    if (result) refreshData();
-    return result;
-  }, [refreshData]);
+  const approveByManagerAction = useCallback(async (id: string, managerName: string): Promise<PurchaseRequest | null> => {
+    try {
+      const result = await approveManager(id);
+      if (result) {
+        await refreshData();
+        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
+      }
+      return result;
+    } catch (err) {
+      console.error("Gagal approve manager:", err);
+      return null;
+    }
+  }, [approveManager, refreshData]);
 
-  const approveByOwnerAction = useCallback((id: string, ownerName: string): PurchaseRequest | null => {
-    const result = svcApproveOwner(id, ownerName);
-    if (result) refreshData();
-    return result;
-  }, [refreshData]);
+  const approveByOwnerAction = useCallback(async (id: string, ownerName: string): Promise<PurchaseRequest | null> => {
+    try {
+      const result = await approveOwner(id);
+      if (result) {
+        await refreshData();
+        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
+      }
+      return result;
+    } catch (err) {
+      console.error("Gagal approve owner:", err);
+      return null;
+    }
+  }, [approveOwner, refreshData]);
 
-  const rejectRequestAction = useCallback((id: string, rejectorName: string, reason?: string): PurchaseRequest | null => {
-    const result = svcReject(id, rejectorName, reason);
-    if (result) refreshData();
-    return result;
-  }, [refreshData]);
+  const rejectRequestAction = useCallback(async (id: string, rejectorName: string, reason?: string): Promise<PurchaseRequest | null> => {
+    try {
+      const result = await reject(id, reason || "Ditolak tanpa alasan spesifik");
+      if (result) {
+        await refreshData();
+        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
+      }
+      return result;
+    } catch (err) {
+      console.error("Gagal menolak request:", err);
+      return null;
+    }
+  }, [reject, refreshData]);
 
-  const deleteRequestAction = useCallback((id: string): boolean => {
-    const result = svcDelete(id);
-    if (result) refreshData();
-    return result;
-  }, [refreshData]);
+  const deleteRequestAction = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const result = await deleteApi(id);
+      if (result) {
+        await refreshData();
+        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
+      }
+      return result;
+    } catch (err) {
+      console.error("Gagal menghapus request:", err);
+      return false;
+    }
+  }, [deleteApi, refreshData]);
 
   // ==================== Filtered Views ====================
 

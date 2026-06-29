@@ -6,7 +6,7 @@ import { useConfirmDialog } from "@/contexts/ConfirmDialogContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApproval } from "@/contexts/ApprovalContext";
 import CreateRequestModal from "@/components/CreateRequestModal";
-import type { ApprovalStatus, PurchaseRequest } from "@/services/approval-service";
+import type { ApprovalStatus, PurchaseRequest } from "@/contexts/ApprovalContext";
 
 type UserRole = "Admin" | "Manager" | "Owner" | "Staf";
 
@@ -182,15 +182,19 @@ export default function ApprovalPage() {
 
   // ==================== Handlers ====================
 
-  const handleCreateRequest = (data: { item: string; quantity: string; amount: number; department: string; description: string }) => {
+  const handleCreateRequest = async (data: { item: string; quantity: string; amount: number; department: string; description: string }) => {
     if (!user) return;
-    createRequest({
+    const result = await createRequest({
       ...data,
       requester: `${user.name} (${user.role})`,
       requesterId: user.id,
     });
-    setShowCreateModal(false);
-    addToast(`📤 Pengajuan "${data.item}" berhasil dikirim ke Manager!`, "success", 3000);
+    if (result) {
+      setShowCreateModal(false);
+      addToast(`📤 Pengajuan "${data.item}" berhasil dikirim ke Manager!`, "success", 3000);
+    } else {
+      addToast("Gagal mengirim pengajuan pengadaan", "error", 3000);
+    }
   };
 
   const handleApprove = async (req: PurchaseRequest) => {
@@ -212,12 +216,12 @@ export default function ApprovalPage() {
 
     let result;
     if (isManager) {
-      result = approveByManager(req.id, user.name);
+      result = await approveByManager(req.id, user.name);
       if (result) {
         addToast(`✓ Approved! Nota ${result.notaNumber} telah dibuat dan diteruskan ke Direktur.`, "success", 4000);
       }
     } else if (isOwner) {
-      result = approveByOwner(req.id, user.name);
+      result = await approveByOwner(req.id, user.name);
       if (result) {
         addToast(`✓✓ Berhasil! Pengadaan "${req.item}" telah disetujui Direktur. Siap untuk proses pengadaan.`, "success", 4000);
       }
@@ -240,9 +244,11 @@ export default function ApprovalPage() {
     });
     if (!confirmed) return;
 
-    const result = rejectRequest(req.id, user.name);
+    const result = await rejectRequest(req.id, user.name);
     if (result) {
       addToast(`❌ Pengajuan ${req.id} — "${req.item}" ditolak.`, "error", 3000);
+    } else {
+      addToast("Gagal menolak pengajuan pengadaan", "error", 3000);
     }
   };
 
