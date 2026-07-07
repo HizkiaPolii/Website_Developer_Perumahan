@@ -71,7 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token, user]);
 
   const checkSessionOnMount = async () => {
-    console.log("🔐 Checking session on mount...");
     try {
       const storedToken = localStorage.getItem("token");
       const storedUser = localStorage.getItem("user");
@@ -91,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Set state FIRST sebelum verify
           setToken(storedToken);
           setUser(userData);
-          console.log("✓ Session restored:", userData.email);
         } catch (parseErr) {
           console.error("❌ Error parsing user:", parseErr);
           localStorage.removeItem("token");
@@ -115,21 +113,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           clearTimeout(timeout);
 
           if (!response.ok && response.status === 401) {
-            console.warn("⚠️  Token invalid (401), logging out");
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             setToken(null);
             setUser(null);
-          } else if (response.ok) {
-            console.log("✓ Token verified successfully");
           }
         } catch (verifyErr) {
           clearTimeout(timeout);
-          console.warn("⚠️  Verification timeout, keeping session");
         }
-      } else {
-        console.log("ℹ️  No stored session");
       }
+
     } catch (err) {
       console.error("Session check error:", err);
     } finally {
@@ -155,8 +148,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      console.log("🔐 Attempting login to:", `${apiUrl}/api/auth/login`);
-      
       const response = await fetch(
         `${apiUrl}/api/auth/login`,
         {
@@ -168,16 +159,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       );
 
-      console.log("📝 Response status:", response.status);
-      console.log("📝 Response statusText:", response.statusText);
-      
       const contentType = response.headers.get("content-type");
-      console.log("📝 Content-Type:", contentType);
 
       // Check if response is HTML (error page)
       if (contentType?.includes("text/html")) {
-        const textResponse = await response.text();
-        console.error("❌ Backend returned HTML (error page):", textResponse.substring(0, 200));
+        await response.text();
         return {
           success: false,
           error: "Backend error - check server logs",
@@ -186,17 +172,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let data;
       const text = await response.text();
-      console.log("📝 Raw response body:", text.substring(0, 500));
-      
+
       if (!text) {
-        console.warn("⚠️  Empty response body from backend");
         data = {};
       } else {
         try {
           data = JSON.parse(text);
         } catch (e) {
-          console.error("❌ Failed to parse JSON:", e);
-          console.log("Response text:", text);
           return {
             success: false,
             error: "Invalid response format from backend",
@@ -204,10 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      console.log("📊 Parsed data:", JSON.stringify(data, null, 2));
-
       if (!response.ok) {
-        console.error("❌ HTTP error:", { status: response.status, data });
         return {
           success: false,
           error: data?.message || data?.error || `Login failed (${response.status})`,
@@ -216,7 +195,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Backend mungkin return langsung { token, user } tanpa wrapper
       if (data?.token && data?.user) {
-        console.log("✅ Format 1: Direct token + user");
         const user: User = {
           id: data.user.id?.toString() || "",
           email: data.user.email,
@@ -230,7 +208,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Atau format { success: true, data: { token, user } }
       if (data?.success && data?.data) {
-        console.log("✅ Format 2: Wrapped in success + data");
         const { token, user: userData } = data.data;
         const user: User = {
           id: userData.id?.toString() || "",
@@ -245,7 +222,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Atau format { success: true, token, user }
       if (data?.success && data?.token && data?.user) {
-        console.log("✅ Format 3: Direct properties");
         const user: User = {
           id: data.user.id?.toString() || "",
           email: data.user.email,
@@ -257,17 +233,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true };
       }
 
-      console.error("❌ Unknown response format:", {
-        keys: Object.keys(data || {}),
-        data,
-      });
-
       return {
         success: false,
         error: "Backend returned unexpected format",
       };
     } catch (error: any) {
-      console.error("❌ Error:", error?.message);
       return {
         success: false,
         error: error?.message || "Network error",
@@ -301,7 +271,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Set warning timer (trigger 1 minute before timeout)
     warningTimeoutRef.current = setTimeout(() => {
-      console.log("⚠️  Idle warning triggered - starting countdown");
       setShowIdleWarning(true);
       
       // Start countdown
@@ -319,7 +288,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Set logout timer
     idleTimeoutRef.current = setTimeout(() => {
-      console.log("⏱️  Idle timeout reached - auto logout triggered");
       logout();
     }, IDLE_TIMEOUT);
   };
@@ -347,7 +315,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (remainingTime > 0) {
       absoluteTimeoutRef.current = setTimeout(() => {
-        console.log("⏰ Session timeout reached, logging out");
         logout();
       }, remainingTime);
     }
@@ -362,7 +329,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const extendSession = () => {
-    console.log("🔄 Session extended by user");
     setShowIdleWarning(false);
     setRemainingIdleSeconds(0);
     resetIdleTimer();
@@ -386,7 +352,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Only reset if more than 1 second has passed since last activity
         if (timeSinceLastActivity > 1000) {
-          console.log("🔐 User activity detected - resetting idle timer");
           resetIdleTimer();
         }
       }, 100);

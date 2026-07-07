@@ -25,6 +25,7 @@ export interface Transaction {
   creditAccountId: string;
   amount: number;
   status?: string;
+  rejectionReason?: string;
 }
 
 // ─── Report Shapes ──────────────────────────────────────────────────

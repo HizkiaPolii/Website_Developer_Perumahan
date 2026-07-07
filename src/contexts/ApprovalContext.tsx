@@ -73,9 +73,11 @@ interface ApprovalContextType {
 
 const ApprovalContext = createContext<ApprovalContextType | undefined>(undefined);
 
+const ALLOWED_ROLES = ["staf", "manager", "owner"];
+
 export function ApprovalProvider({ children }: { children: React.ReactNode }) {
   const { getAll, create, approveManager, approveOwner, reject, delete: deleteApi } = usePurchaseRequests();
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [stats, setStats] = useState<ApprovalStats>({
@@ -106,6 +108,11 @@ export function ApprovalProvider({ children }: { children: React.ReactNode }) {
 
   const refreshData = useCallback(async () => {
     if (!isAuthenticated || !token) {
+      setRequests([]);
+      setIsLoading(false);
+      return;
+    }
+    if (!ALLOWED_ROLES.includes(user?.role?.toLowerCase() || "")) {
       setRequests([]);
       setIsLoading(false);
       return;

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, DollarSign, BarChart3, CheckCircle, Users, FileText, TrendingUp, Archive, BookOpen } from "lucide-react";
+import { LayoutDashboard, BarChart3, CheckCircle, Users, FileText, TrendingUp, Archive, BookOpen, Award } from "lucide-react";
 
 type Role = "Admin" | "Manager" | "Owner" | "Staf" | "Teller";
 
@@ -35,11 +35,6 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
     }
   }, []);
 
-  // Debug logging
-  useEffect(() => {
-    console.log("Sidebar - Role:", role);
-    console.log("Sidebar - User:", user);
-  }, [role, user]);
 
   const menuItems = [
     { label: "Dashboard", href: "/", roles: ["Admin", "Manager", "Owner", "Staf", "Teller"], icon: LayoutDashboard },
@@ -51,6 +46,7 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
     { label: "Laporan Arus Kas", href: "/laporan/arus-kas", roles: ["Manager", "Owner"], icon: BarChart3 },
     { label: "Laporan Perubahan Modal", href: "/laporan/perubahan-modal", roles: ["Manager", "Owner"], icon: BarChart3 },
     { label: "Pengarsipan Laporan", href: "/laporan/arsip", roles: ["Manager", "Owner"], icon: Archive },
+    { label: "Analisis Kinerja Keuangan", href: "/laporan/analisis-kinerja", roles: ["Manager", "Owner"], icon: Award },
     { label: "Halaman Approval Pengadaan", href: "/approval", roles: ["Staf", "Manager", "Owner"], icon: CheckCircle },
     { label: "Manajemen User", href: "/users", roles: ["Admin"], icon: Users },
     { label: "Activity Log", href: "/activity-log", roles: ["Admin", "Owner"], icon: FileText },
@@ -62,7 +58,6 @@ export default function Sidebar({ role, isMobile = false, onClose }: SidebarProp
     item.roles.some(r => r.toLowerCase() === normalizedRole.toLowerCase())
   );
 
-  console.log("Filtered Menu Items:", filteredMenuItems);
 
   return (
     <aside className="fixed left-0 top-0 w-64 h-screen bg-slate-900 text-white flex flex-col shadow-xl overflow-y-auto">

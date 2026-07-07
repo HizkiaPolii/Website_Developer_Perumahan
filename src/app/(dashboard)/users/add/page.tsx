@@ -6,7 +6,7 @@ import { ArrowLeft, Loader } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-type Role = "Admin" | "Manager" | "Owner" | "Staf";
+type Role = "Admin" | "Manager" | "Owner" | "Staf" | "Teller";
 
 export default function AddUserPage() {
   const router = useRouter();
@@ -98,10 +98,8 @@ export default function AddUserPage() {
       });
 
       const data = await response.json();
-      console.log("✅ Add user response:", response.status, data);
 
       if (!response.ok) {
-        console.error("❌ Backend error:", data);
         addToast(`❌ ${data.message || "Gagal menambah user"}`, "error", 3000);
         return;
       }
@@ -133,7 +131,7 @@ export default function AddUserPage() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4 sm:p-6 md:p-8 shadow-md animate-slide-in-up">
+      <div className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4 sm:p-6 md:p-8 shadow-md animate-slide-in-up">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Nama */}
           <div className="animate-slide-in-up" style={{animationDelay: '50ms'}}>
@@ -210,6 +208,7 @@ export default function AddUserPage() {
               <option value="Manager">👔 Manager</option>
               <option value="Owner">👑 Owner / Direktur</option>
               <option value="Staf">👷 Staf</option>
+              <option value="Teller">💵 Teller</option>
             </select>
           </div>
 
@@ -225,7 +224,7 @@ export default function AddUserPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm hover:scale-105 active:scale-95"
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-linear-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm hover:scale-105 active:scale-95"
             >
               {loading ? (
                 <>

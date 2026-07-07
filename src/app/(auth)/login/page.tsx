@@ -18,9 +18,7 @@ export default function LoginPage() {
 
   // Redirect ke dashboard jika sudah login
   useEffect(() => {
-    console.log("🔍 Login page - checking auth:", { isLoading, isAuthenticated });
     if (!isLoading && isAuthenticated) {
-      console.log("✅ User authenticated - redirecting to dashboard");
       router.replace("/");
     }
   }, [isAuthenticated, isLoading, router]);
@@ -167,7 +165,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !email || !password}
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 text-sm mt-2"
+              className="w-full bg-linear-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 text-sm mt-2"
             >
               {loading ? (
                 <>

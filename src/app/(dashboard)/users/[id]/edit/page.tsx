@@ -7,7 +7,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useApiEndpoints';
 
-type Role = 'Admin' | 'Manager' | 'Owner' | 'Staf';
+type Role = 'Admin' | 'Manager' | 'Owner' | 'Staf' | 'Teller';
 
 interface User {
   id: string | number;
@@ -205,6 +205,7 @@ export default function EditUserPage() {
               <option value="Manager">👔 Manager</option>
               <option value="Owner">👑 Owner / Direktur</option>
               <option value="Staf">👷 Staf</option>
+              <option value="Teller">💵 Teller</option>
             </select>
           </div>
 

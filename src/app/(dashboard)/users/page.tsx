@@ -8,7 +8,7 @@ import { useConfirmDialog } from "@/contexts/ConfirmDialogContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUsers } from "@/hooks/useApiEndpoints";
 
-type Role = "Admin" | "Manager" | "Owner" | "Staf";
+type Role = "Admin" | "Manager" | "Owner" | "Staf" | "Teller";
 
 interface User {
   id: string | number;
@@ -271,7 +271,7 @@ export default function UsersPage() {
             Filter Role
           </label>
           <div className="flex bg-slate-100 p-1 rounded-xl">
-            {(["All", "Admin", "Manager", "Owner", "Staf"] as const).map((role) => (
+            {(["All", "Admin", "Manager", "Owner", "Staf", "Teller"] as const).map((role) => (
               <button
                 key={role}
                 onClick={() => setFilterRole(role as Role | "All")}

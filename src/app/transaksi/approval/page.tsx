@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useApi } from "@/hooks/useApi";
 import { useToast } from "@/contexts/ToastContext";
+import { useConfirmDialog } from "@/contexts/ConfirmDialogContext";
 import { formatIDR } from "@/lib/accounting";
 import { PageHeader, Card, Btn } from "@/components/finance-ui";
 import {
@@ -11,12 +12,7 @@ import {
   Clock,
   User,
   AlertCircle,
-  FileText,
   FileSpreadsheet,
-  ArrowRight,
-  TrendingDown,
-  TrendingUp,
-  MessageSquare,
   ShieldCheck,
   RotateCcw
 } from "lucide-react";
@@ -51,6 +47,7 @@ interface PendingTransaction {
 export default function TransactionApprovalPage() {
   const { call } = useApi();
   const { addToast } = useToast();
+  const { confirm } = useConfirmDialog();
 
   const [pendingList, setPendingList] = useState<PendingTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +66,6 @@ export default function TransactionApprovalPage() {
       const data = res.data || res || [];
       setPendingList(data);
     } catch (err: any) {
-      console.error("Error fetching pending transactions:", err);
       addToast(err.message || "Gagal memuat daftar pengajuan transaksi", "error");
     } finally {
       setLoading(false);
@@ -81,9 +77,13 @@ export default function TransactionApprovalPage() {
   }, [fetchPendingTransactions]);
 
   const handleApprove = async (tx: PendingTransaction) => {
-    const confirmApprove = window.confirm(
-      `Setujui dan bukukan transaksi "${tx.description}" senilai ${formatIDR(tx.amount)}?`
-    );
+    const confirmApprove = await confirm({
+      title: "Setujui Transaksi?",
+      message: `Transaksi "${tx.description}" senilai ${formatIDR(tx.amount)} akan dibukukan ke jurnal.`,
+      confirmText: "Setujui (ACC)",
+      cancelText: "Batal",
+      type: "info",
+    });
     if (!confirmApprove) return;
 
     setActionLoadingId(tx.id);

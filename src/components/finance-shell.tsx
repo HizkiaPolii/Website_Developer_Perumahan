@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ArrowRightLeft, Layers, Wallet,
   TrendingUp, Scale, CircleDollarSign, LogOut, Menu, X,
-  Loader2, CheckCircle, Users, FileText, Settings, Archive, ShieldAlert, BookOpen, type LucideIcon
+  Loader2, CheckCircle, Users, FileText, Settings, Archive, ShieldAlert, BookOpen, Award, type LucideIcon
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import SessionWarningModal from "./SessionWarningModal";
@@ -114,6 +114,7 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
         { name: "Perubahan Modal", href: "/laporan/perubahan-modal", icon: CircleDollarSign, roles: ["Teller", "Manager", "Owner"] },
         { name: "Neraca", href: "/laporan/neraca", icon: Scale, roles: ["Teller", "Manager", "Owner"] },
         { name: "Pengarsipan Laporan", href: "/laporan/arsip", icon: Archive, roles: ["Teller", "Manager", "Owner"] },
+        { name: "Analisis Kinerja Keuangan", href: "/laporan/analisis-kinerja", icon: Award, roles: ["Manager", "Owner"] },
       ],
     },
     {

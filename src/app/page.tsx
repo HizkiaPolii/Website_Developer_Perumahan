@@ -73,7 +73,7 @@ function AdminDashboard({ user, usersHook, activityLogsHook }: { user: any; user
         if (usersData) setUsers(usersData);
         if (logsData) setLogs(logsData.slice(0, 5));
       } catch (err) {
-        console.error("Gagal memuat data admin:", err);
+        // silently skip — admin data is non-critical
       } finally {
         setLoading(false);
       }
@@ -711,7 +711,7 @@ function OwnerDashboard({ user, activityLogsHook }: { user: any; activityLogsHoo
         const logsData = await activityLogsHook.getAll({ limit: 5 });
         if (logsData) setLogs(logsData.slice(0, 5));
       } catch (err) {
-        console.error("Gagal memuat log aktivitas:", err);
+        // silently skip — activity log is non-critical
       }
     }
     loadLogs();

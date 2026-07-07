@@ -8,7 +8,7 @@ import { Layers, Plus, Save, X, ChevronRight, ChevronDown, Trash2 } from "lucide
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function MasterAkunPage() {
-  const { accounts, transactions, reports, addAccount, deleteAccount, ready } = useAccountingStore();
+  const { accounts, reports, addAccount, deleteAccount, ready } = useAccountingStore();
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -17,8 +17,8 @@ export default function MasterAkunPage() {
   if (!ready) return null;
 
   const role = user?.role?.toLowerCase() || "";
-  const isCreatable = role === "admin" || role === "teller";
-  const isDeletable = role === "admin" || role === "teller";
+  const isCreatable = role === "teller";
+  const isDeletable = role === "teller";
 
   const { balances } = reports;
 
@@ -39,7 +39,7 @@ export default function MasterAkunPage() {
   const previewCode = generateAccountCode(accounts, effectiveType, parentIdForForm);
 
   // ── Submit ───────────────────────────────────────────────────────
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.name.trim()) return;
 

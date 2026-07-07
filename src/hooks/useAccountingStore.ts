@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import {
   Account, Transaction, Reports,
-  defaultAccounts, defaultTransactions,
   buildReports,
 } from "@/lib/accounting";
 
@@ -53,7 +52,8 @@ export function useAccountingStore() {
         type: typeMap[acc.accountType] || "aset",
         parentId: acc.parentId ? acc.parentId.toString() : null,
         isCash: acc.isCashFlow || false,
-        isDrawing: acc.accountName.toLowerCase().includes("prive") || acc.accountCode.startsWith("3.1.02")
+        isFixedAsset: acc.isFixedAsset || false,
+        isDrawing: acc.accountName.toLowerCase().includes("prive") || acc.accountName.toLowerCase().includes("drawing")
       }));
 
       // Fetch Transactions
@@ -73,7 +73,8 @@ export function useAccountingStore() {
         debitAccountId: trx.debitAccountId.toString(),
         creditAccountId: trx.creditAccountId.toString(),
         amount: parseFloat(trx.amount.toString()),
-        status: trx.status
+        status: trx.status,
+        rejectionReason: trx.rejectionReason ?? undefined,
       }));
 
       setAccounts(normalizedAccounts);
@@ -97,7 +98,6 @@ export function useAccountingStore() {
   // Listen to custom events for data updates (e.g. transaction approval)
   useEffect(() => {
     const handleUpdate = () => {
-      console.log("🔄 Reloading accounting data due to update event...");
       loadData();
     };
     window.addEventListener("approvalDataChanged", handleUpdate);
@@ -130,6 +130,7 @@ export function useAccountingStore() {
         parentId: account.parentId ? parseInt(account.parentId) : undefined,
         description: account.name,
         isCashFlow: account.isCash || false,
+        isFixedAsset: account.isFixedAsset || false,
       };
 
       const res = await call("POST", "/api/chart-of-accounts", payload);
@@ -180,6 +181,7 @@ export function useAccountingStore() {
       }
       if (patch.type) payload.accountType = reverseTypeMap[patch.type];
       if (patch.isCash !== undefined) payload.isCashFlow = patch.isCash;
+      if (patch.isFixedAsset !== undefined) payload.isFixedAsset = patch.isFixedAsset;
 
       const res = await call("PUT", `/api/chart-of-accounts/${id}`, payload);
       if (res && res.success === false) {

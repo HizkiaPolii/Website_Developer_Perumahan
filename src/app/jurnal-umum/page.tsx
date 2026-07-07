@@ -95,8 +95,8 @@ export default function JurnalUmumPage() {
         setEntries(res.data);
         setTotalPages(res.pagination?.pages || 1);
         setTotalEntries(res.pagination?.total || 0);
-        setSummaryDebit(parseFloat(res.summary?.totalDebit || "0"));
-        setSummaryCredit(parseFloat(res.summary?.totalCredit || "0"));
+        setSummaryDebit(parseFloat(res.summary?.totalDebit) || 0);
+        setSummaryCredit(parseFloat(res.summary?.totalCredit) || 0);
       } else {
         setEntries([]);
       }

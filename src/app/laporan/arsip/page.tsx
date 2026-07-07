@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Archive, 
   Lock, 
@@ -58,9 +59,6 @@ function generateDailyArchives(year: number, month: number, apiReports: any[] = 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     const dayOfWeek = date.getDay();
-
-    // Skip weekend (Sabtu & Minggu)
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
@@ -127,6 +125,7 @@ export default function ArsipLaporanPage() {
   const { user } = useAuth();
   const { getAll, loading } = useFinancialReports();
   const { call } = useApi();
+  const router = useRouter();
 
   const today = new Date();
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
@@ -135,7 +134,8 @@ export default function ArsipLaporanPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchDate, setSearchDate] = useState('');
 
-  const years = [2026, 2025, 2024];
+  const currentYear = today.getFullYear();
+  const years = [currentYear, currentYear - 1, currentYear - 2];
 
   // Fetch real data from API
   const fetchReports = async () => {
@@ -231,7 +231,7 @@ export default function ArsipLaporanPage() {
 
   // Navigate to live report
   const navigateToReport = (path: string) => {
-    window.location.href = path;
+    router.push(path);
   };
 
   return (
@@ -239,21 +239,21 @@ export default function ArsipLaporanPage() {
 
       {/* Header */}
       <PageHeader
-        title="Pengarsipan Laporan (End of Day)"
-        description="Semua laporan keuangan dikunci otomatis setiap akhir hari kerja (18:00 WITA). Terhubung langsung dengan 4 laporan utama."
+        title="Pengarsipan Laporan Keuangan"
+        description="Manager dapat mengunci laporan keuangan harian secara manual. Laporan yang terkunci tersimpan sebagai arsip historis dan tidak dapat diubah."
         icon={Archive}
       />
 
-      {/* Info Banner — End of Day */}
+      {/* Info Banner */}
       <Card className="p-4 bg-indigo-50/50 border-indigo-100">
         <div className="flex items-start gap-3">
-          <Clock className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
+          <Lock className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-xs font-bold text-indigo-800 uppercase tracking-wide">Metode Pengarsipan: End of Day</p>
+            <p className="text-xs font-bold text-indigo-800 uppercase tracking-wide">Cara Kerja Pengarsipan</p>
             <p className="text-xs text-indigo-600 mt-1 leading-relaxed">
-              Setiap hari kerja pukul <strong>18:00 WITA</strong>, sistem otomatis mengunci (lock) seluruh laporan keuangan hari tersebut.
-              Laporan yang terkunci meliputi: <strong>Neraca</strong>, <strong>Laba Rugi</strong>, <strong>Arus Kas</strong>, dan <strong>Perubahan Modal</strong>.
-              Data yang sudah terkunci tidak dapat diubah.
+              Manager dapat mengunci (lock) laporan keuangan harian kapan pun diperlukan melalui tombol <strong>Kunci &amp; Arsipkan</strong> pada baris hari yang diinginkan.
+              Laporan yang diarsipkan meliputi: <strong>Neraca</strong>, <strong>Laba Rugi</strong>, <strong>Arus Kas</strong>, dan <strong>Perubahan Modal</strong>.
+              Data yang sudah terkunci tidak dapat diubah dan tersimpan sebagai arsip historis permanen.
             </p>
           </div>
         </div>
@@ -342,7 +342,7 @@ export default function ArsipLaporanPage() {
         </Card>
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Laporan API</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Arsip Tersimpan</span>
             <span className="text-xl font-black text-indigo-600 mt-1 block">{stats.apiReportsCount}</span>
           </div>
           <span className="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl">
@@ -356,6 +356,22 @@ export default function ArsipLaporanPage() {
         <Card className="p-10 flex flex-col items-center justify-center gap-2">
           <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
           <p className="text-xs text-slate-500 font-semibold">Memuat data arsip...</p>
+        </Card>
+      )}
+
+      {/* Empty State — belum ada laporan dikunci bulan ini */}
+      {!isLoading && stats.locked === 0 && (
+        <Card className="p-12 flex flex-col items-center justify-center gap-3 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <Archive className="w-7 h-7 text-slate-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-600">Belum ada laporan diarsipkan</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Belum ada laporan yang dikunci untuk periode <strong>{BULAN[selectedMonth]} {selectedYear}</strong>.
+              <br />Gunakan tombol <strong>Kunci &amp; Arsipkan</strong> pada baris hari di bawah ini untuk mulai mengarsipkan.
+            </p>
+          </div>
         </Card>
       )}
 
@@ -389,21 +405,36 @@ export default function ArsipLaporanPage() {
               <tbody className="divide-y divide-slate-50">
                 {filteredArchives.map((archive) => {
                   const isLocked = archive.status === 'LOCKED';
+                  const isWeekend = archive.dayName === 'Sabtu' || archive.dayName === 'Minggu';
+                  // Parse date as local time (avoid UTC midnight timezone issue)
+                  const [ay, am, ad] = archive.date.split('-').map(Number);
+                  const archiveLocalDate = new Date(ay, am - 1, ad);
+                  const isPast = archiveLocalDate <= today;
                   return (
                     <tr
                       key={archive.date}
-                      className={`transition-colors ${isLocked ? 'hover:bg-slate-50/70' : 'hover:bg-amber-50/30 bg-amber-50/10'}`}
+                      className={`transition-colors ${
+                        isWeekend
+                          ? 'bg-slate-50/60 opacity-70'
+                          : isLocked
+                            ? 'hover:bg-slate-50/70'
+                            : 'hover:bg-amber-50/30 bg-amber-50/10'
+                      }`}
                     >
                       {/* Date */}
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black ${
+                            isWeekend ? 'bg-slate-100 text-slate-400' :
                             isLocked ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
                           }`}>
-                            {new Date(archive.date).getDate()}
+                            {ad}
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-slate-800">{archive.dayName}</p>
+                            <p className={`text-xs font-bold ${isWeekend ? 'text-slate-400' : 'text-slate-800'}`}>
+                              {archive.dayName}
+                              {isWeekend && <span className="ml-1.5 text-[9px] font-semibold text-slate-300 uppercase tracking-wide">Libur</span>}
+                            </p>
                             <p className="text-[10px] text-slate-400 mt-0.5">{archive.displayDate}</p>
                           </div>
                         </div>
@@ -411,7 +442,11 @@ export default function ArsipLaporanPage() {
 
                       {/* Status */}
                       <td className="px-5 py-3.5">
-                        {isLocked ? (
+                        {isWeekend ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 rounded-full text-[9px] font-bold uppercase">
+                            Hari Libur
+                          </span>
+                        ) : isLocked ? (
                           <div>
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[9px] font-bold uppercase">
                               <Lock className="w-2.5 h-2.5" /> Terkunci
@@ -425,12 +460,12 @@ export default function ArsipLaporanPage() {
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[9px] font-bold uppercase">
                               <Clock className="w-2.5 h-2.5" /> Terbuka
                             </span>
-                            {new Date(archive.date) <= today && (
+                            {isPast && (
                               <button
                                 onClick={() => handleLockDay(archive.date)}
                                 className="block text-[8px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline uppercase tracking-wider text-left"
                               >
-                                Kunci Hari (EOD)
+                                Kunci &amp; Arsipkan
                               </button>
                             )}
                           </div>

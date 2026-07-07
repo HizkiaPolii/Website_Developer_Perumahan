@@ -93,7 +93,7 @@ function ActivityLogContent() {
           setUsersList(data);
         }
       } catch (err) {
-        console.error("Gagal memuat daftar user:", err);
+        // non-critical: user list for filter only
       }
     };
 
@@ -137,7 +137,6 @@ function ActivityLogContent() {
         setLogs([]);
       }
     } catch (err: any) {
-      console.error("Fetch logs error:", err);
       addToast(err.message || "Gagal memuat log aktivitas", "error");
     } finally {
       setLoading(false);

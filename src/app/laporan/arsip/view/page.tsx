@@ -57,14 +57,10 @@ function ReportContent() {
         return;
       }
       try {
-        const start = new Date(dateStr);
-        start.setDate(start.getDate() - 2); // Widen window to avoid timezone issues
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(dateStr);
-        end.setDate(end.getDate() + 2);
-        end.setHours(23, 59, 59, 999);
-
-        console.log(`[Arsip View] Fetching ${reportType} report for date ${dateStr}. Start: ${start.toISOString()}, End: ${end.toISOString()}`);
+        // Parse dateStr (YYYY-MM-DD) as local time to avoid UTC offset issues
+        const [dy, dm, dd] = dateStr.split('-').map(Number);
+        const start = new Date(dy, dm - 1, dd, 0, 0, 0, 0);
+        const end   = new Date(dy, dm - 1, dd, 23, 59, 59, 999);
 
         let apiData = await getAll({
           reportType,
@@ -73,8 +69,6 @@ function ReportContent() {
           endDate: end.toISOString(),
         });
 
-        console.log(`[Arsip View] Retrieved ${apiData?.length || 0} reports from filtered query.`);
-
         let data = apiData.filter((rep: any) => {
           const repDate = new Date(rep.periodEnd);
           const repDateStr = `${repDate.getFullYear()}-${String(repDate.getMonth() + 1).padStart(2, '0')}-${String(repDate.getDate()).padStart(2, '0')}`;
@@ -82,12 +76,9 @@ function ReportContent() {
           return repDateStr === dateStr || utcDateStr === dateStr;
         });
 
-        // Fallback: If no matching report found via filtered API, fetch all reports and filter client-side
+        // Fallback: jika query filter tidak menemukan, cari dari semua laporan
         if (data.length === 0) {
-          console.warn('[Arsip View] Filtered query returned no matching reports. Retrying with fallback (fetch all)...');
           const allData = await getAll();
-          console.log(`[Arsip View] Fallback retrieved ${allData?.length || 0} total reports.`);
-          
           data = allData.filter((rep: any) => {
             if (rep.reportType !== reportType || rep.status !== 'FINALIZED') return false;
             const repDate = new Date(rep.periodEnd);
@@ -98,7 +89,6 @@ function ReportContent() {
         }
 
         if (data && data.length > 0) {
-          console.log(`[Arsip View] Successfully found matching report:`, data[0]);
           setReport(data[0]);
         } else {
           setError(`Laporan ${reportType} untuk tanggal ${dateStr} tidak ditemukan di database. Pastikan laporan hari tersebut telah dikunci (Locked).`);
@@ -117,7 +107,7 @@ function ReportContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 text-indigo-650 text-indigo-650 animate-spin" />
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
         <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Memuat Dokumen Arsip...</p>
       </div>
     );

@@ -55,13 +55,10 @@ export function useDashboard() {
     try {
       setLoading(true);
       setError(null);
-      console.log('📊 Fetching dashboard stats...');
       const response = await call('GET', '/api/dashboard/stats');
-      console.log('✅ Stats fetched:', response);
       return response.data || null;
     } catch (err: any) {
       const errorMsg = err.message || 'Unknown error';
-      console.error('❌ Error fetching stats:', errorMsg);
       setError(errorMsg);
       return null;
     } finally {
@@ -73,13 +70,10 @@ export function useDashboard() {
     try {
       setLoading(true);
       setError(null);
-      console.log('💼 Fetching recent transactions...');
       const response = await call('GET', '/api/dashboard/recent-transactions');
-      console.log('✅ Transactions fetched:', response);
       return response.data || [];
     } catch (err: any) {
       const errorMsg = err.message || 'Unknown error';
-      console.error('❌ Error fetching transactions:', errorMsg);
       setError(errorMsg);
       return [];
     } finally {

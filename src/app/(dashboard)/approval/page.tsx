@@ -22,6 +22,7 @@ export default function ApprovalPage() {
     approveByManager,
     approveByOwner,
     rejectRequest,
+    deleteRequest,
     getPendingForManager,
     getPendingForOwner,
     getHistoryForManager,
@@ -40,6 +41,12 @@ export default function ApprovalPage() {
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "All">("All");
   const [deptFilter, setDeptFilter] = useState<string>("All");
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
+  const [notaToPrint, setNotaToPrint] = useState<PurchaseRequest | null>(null);
+
+  const handlePrintNota = (req: PurchaseRequest) => {
+    setNotaToPrint(req);
+    setTimeout(() => window.print(), 50);
+  };
 
   // Sync default active tab when role changes
   useEffect(() => {
@@ -232,6 +239,26 @@ export default function ApprovalPage() {
     }
   };
 
+  const handleDelete = async (req: PurchaseRequest) => {
+    if (!user) return;
+
+    const confirmed = await confirm({
+      title: "Hapus Pengajuan?",
+      message: `Yakin ingin menghapus pengajuan "${req.item}"? Tindakan ini tidak bisa dibatalkan.`,
+      confirmText: "Ya, Hapus",
+      cancelText: "Batal",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
+    const result = await deleteRequest(req.id);
+    if (result) {
+      addToast(`Pengajuan "${req.item}" berhasil dihapus.`, "success", 3000);
+    } else {
+      addToast("Gagal menghapus pengajuan.", "error", 3000);
+    }
+  };
+
   const handleReject = async (req: PurchaseRequest) => {
     if (!user) return;
 
@@ -268,7 +295,8 @@ export default function ApprovalPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+    <>
+    <div className="max-w-6xl mx-auto space-y-8 pb-20 print:hidden">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -309,21 +337,21 @@ export default function ApprovalPage() {
           title="Pengajuan"
           desc="Tim Lapangan"
           active={isFieldRole}
-          completed={stats.total > 0}
+          completed={!isFieldRole && stats.total > 0}
         />
         <WorkflowStep
           num="2"
           title="Validasi & Nota"
           desc="Manager"
           active={isManager}
-          completed={stats.accManager > 0 || stats.accFinal > 0}
+          completed={isOwner && (stats.accManager > 0 || stats.accFinal > 0)}
         />
         <WorkflowStep
           num="3"
           title="Final Approval"
           desc="Direktur/Owner"
           active={isOwner}
-          completed={stats.accFinal > 0}
+          completed={false}
         />
         <WorkflowStep
           num="4"
@@ -378,7 +406,12 @@ export default function ApprovalPage() {
               {myRequests.length > 0 ? (
                 <div className="space-y-4">
                   {myRequests.map((req) => (
-                    <RequestCard key={req.id} req={req} showActions={false} />
+                    <RequestCard
+                      key={req.id}
+                      req={req}
+                      showActions={false}
+                      onDelete={req.status === "Pending" ? () => handleDelete(req) : undefined}
+                    />
                   ))}
                 </div>
               ) : (
@@ -567,13 +600,9 @@ export default function ApprovalPage() {
                   <p className="text-slate-400 text-sm">Disetujui Final</p>
                   <p className="text-xl font-bold text-emerald-400">{stats.accFinal}</p>
                 </div>
-                <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                <div className="flex justify-between items-center">
                   <p className="text-slate-400 text-sm">Ditolak</p>
                   <p className="text-xl font-bold text-red-400">{stats.rejected}</p>
-                </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-slate-400 text-sm">Total Nilai ACC</p>
-                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(stats.approvedAmount)}</p>
                 </div>
               </div>
             </div>
@@ -584,7 +613,7 @@ export default function ApprovalPage() {
               <h3 className="text-sm font-bold text-amber-900 mb-4 uppercase tracking-widest">Contoh Format Nota</h3>
               <div className="bg-white rounded-xl p-4 shadow-sm text-[10px] font-mono space-y-2 border border-amber-100">
                 <div className="text-center border-b pb-2 mb-2">
-                  <p className="font-bold">PERUMAHAN SEJAHTERA</p>
+                  <p className="font-bold">BUMI RESIDENCE</p>
                   <p>NOTA PERMINTAAN BARANG</p>
                 </div>
                 <div className="flex justify-between">
@@ -626,7 +655,7 @@ export default function ApprovalPage() {
 
       {/* Details Drawer Overlay */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-50 flex justify-end print:hidden">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
@@ -750,7 +779,15 @@ export default function ApprovalPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+            <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0 space-y-2">
+              {selectedRequest.notaNumber && (
+                <button
+                  onClick={() => handlePrintNota(selectedRequest)}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                >
+                  🖨️ Cetak Nota ({selectedRequest.notaNumber})
+                </button>
+              )}
               <button
                 onClick={() => setSelectedRequest(null)}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-xs transition-colors cursor-pointer"
@@ -762,6 +799,61 @@ export default function ApprovalPage() {
         </div>
       )}
     </div>
+
+    {/* Nota Print Area — hanya tampil saat print, diisi data asli pengajuan */}
+    {notaToPrint && (
+      <div className="hidden print:block p-10 font-mono text-sm">
+        <div className="text-center border-b-2 border-black pb-3 mb-4">
+          <p className="font-bold text-lg">BUMI RESIDENCE</p>
+          <p>NOTA PERMINTAAN BARANG</p>
+        </div>
+        <div className="flex justify-between mb-4">
+          <span>No. Nota: <strong>{notaToPrint.notaNumber}</strong></span>
+          <span>Tgl ACC Manager: {formatDate(notaToPrint.approvedByManagerAt)}</span>
+        </div>
+        <table className="w-full border-collapse mb-6">
+          <tbody>
+            <tr>
+              <td className="py-1 pr-4 align-top">Item</td>
+              <td className="py-1">: {notaToPrint.item}</td>
+            </tr>
+            <tr>
+              <td className="py-1 pr-4 align-top">Jumlah</td>
+              <td className="py-1">: {notaToPrint.quantity}</td>
+            </tr>
+            <tr>
+              <td className="py-1 pr-4 align-top">Estimasi Biaya</td>
+              <td className="py-1">: {formatCurrency(notaToPrint.amount)}</td>
+            </tr>
+            <tr>
+              <td className="py-1 pr-4 align-top">Proyek / Departemen</td>
+              <td className="py-1">: {notaToPrint.department}</td>
+            </tr>
+            <tr>
+              <td className="py-1 pr-4 align-top">Pemohon</td>
+              <td className="py-1">: {notaToPrint.requester}</td>
+            </tr>
+            <tr>
+              <td className="py-1 pr-4 align-top">Keterangan</td>
+              <td className="py-1">: {notaToPrint.description}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div className="flex justify-between mt-16 text-center">
+          <div>
+            <p>Manager</p>
+            <div className="h-16" />
+            <p>( {notaToPrint.approvedByManager} )</p>
+          </div>
+          <div>
+            <p>Direktur</p>
+            <div className="h-16" />
+            <p>( {notaToPrint.approvedByOwner || "________"} )</p>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -773,12 +865,14 @@ function RequestCard({
   role,
   onApprove,
   onReject,
+  onDelete,
 }: {
   req: PurchaseRequest;
   showActions: boolean;
   role?: UserRole;
   onApprove?: () => void;
   onReject?: () => void;
+  onDelete?: () => void;
 }) {
   const isManager = role === "Manager";
 
@@ -851,6 +945,18 @@ function RequestCard({
               className="px-6 py-3 bg-white hover:bg-red-50 text-red-600 border border-red-100 rounded-xl font-bold text-sm transition-all"
             >
               Tolak
+            </button>
+          </div>
+        )}
+
+        {/* Hapus Pengajuan — hanya Staf, hanya status Pending */}
+        {onDelete && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <button
+              onClick={onDelete}
+              className="w-full px-4 py-2.5 bg-white hover:bg-red-50 text-red-500 border border-red-200 hover:border-red-300 rounded-xl font-bold text-sm transition-all"
+            >
+              Hapus Pengajuan
             </button>
           </div>
         )}
