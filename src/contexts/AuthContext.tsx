@@ -112,7 +112,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           clearTimeout(timeout);
 
-          if (!response.ok && response.status === 401) {
+          // 401 = token tidak valid/expired, 403 = akun dinonaktifkan Admin —
+          // keduanya harus memaksa logout, bukan cuma token invalid.
+          if (!response.ok && (response.status === 401 || response.status === 403)) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             setToken(null);

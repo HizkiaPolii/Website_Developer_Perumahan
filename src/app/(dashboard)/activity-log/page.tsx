@@ -71,6 +71,20 @@ function ActivityLogContent() {
     { value: "CREATE_USER", label: "➕ Tambah User" },
     { value: "UPDATE_USER", label: "✏️ Edit User" },
     { value: "DELETE_USER", label: "🗑️ Hapus User" },
+    { value: "CREATE_TRANSACTION", label: "💰 Buat Transaksi" },
+    { value: "UPDATE_TRANSACTION", label: "✏️ Edit Transaksi" },
+    { value: "APPROVE_TRANSACTION", label: "✅ Setujui Transaksi" },
+    { value: "REJECT_TRANSACTION", label: "❌ Tolak Transaksi" },
+    { value: "DELETE_TRANSACTION", label: "🗑️ Hapus Transaksi" },
+    { value: "CREATE_ACCOUNT", label: "➕ Tambah Akun" },
+    { value: "UPDATE_ACCOUNT", label: "✏️ Edit Akun" },
+    { value: "DELETE_ACCOUNT", label: "🗑️ Hapus Akun" },
+    { value: "CREATE_PURCHASE_REQUEST", label: "📦 Buat Pengajuan Barang" },
+    { value: "APPROVE_PURCHASE_REQUEST_MANAGER", label: "✅ ACC Pengajuan (Manager)" },
+    { value: "APPROVE_PURCHASE_REQUEST_OWNER", label: "✅ ACC Final Pengajuan (Owner)" },
+    { value: "REJECT_PURCHASE_REQUEST", label: "❌ Tolak Pengajuan" },
+    { value: "DELETE_PURCHASE_REQUEST", label: "🗑️ Hapus Pengajuan" },
+    { value: "LOCK_ARCHIVE_REPORT", label: "🔒 Kunci & Arsipkan Laporan" },
   ];
 
   // Role Guard

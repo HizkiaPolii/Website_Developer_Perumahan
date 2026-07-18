@@ -146,79 +146,54 @@ export function ApprovalProvider({ children }: { children: React.ReactNode }) {
   // ==================== Actions ====================
 
   const createRequestAction = useCallback(async (input: CreateRequestInput): Promise<PurchaseRequest | null> => {
-    try {
-      const result = await create({
-        item: input.item,
-        quantity: input.quantity,
-        amount: input.amount,
-        department: input.department,
-        description: input.description,
-      });
-      if (result) {
-        await refreshData();
-        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
-      }
-      return result;
-    } catch (err) {
-      console.error("Gagal membuat request:", err);
-      return null;
+    const result = await create({
+      item: input.item,
+      quantity: input.quantity,
+      amount: input.amount,
+      department: input.department,
+      description: input.description,
+    });
+    if (result) {
+      await refreshData();
+      window.dispatchEvent(new CustomEvent("approvalDataChanged"));
     }
+    return result;
   }, [create, refreshData]);
 
   const approveByManagerAction = useCallback(async (id: string, managerName: string): Promise<PurchaseRequest | null> => {
-    try {
-      const result = await approveManager(id);
-      if (result) {
-        await refreshData();
-        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
-      }
-      return result;
-    } catch (err) {
-      console.error("Gagal approve manager:", err);
-      return null;
+    const result = await approveManager(id);
+    if (result) {
+      await refreshData();
+      window.dispatchEvent(new CustomEvent("approvalDataChanged"));
     }
+    return result;
   }, [approveManager, refreshData]);
 
   const approveByOwnerAction = useCallback(async (id: string, ownerName: string): Promise<PurchaseRequest | null> => {
-    try {
-      const result = await approveOwner(id);
-      if (result) {
-        await refreshData();
-        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
-      }
-      return result;
-    } catch (err) {
-      console.error("Gagal approve owner:", err);
-      return null;
+    const result = await approveOwner(id);
+    if (result) {
+      await refreshData();
+      window.dispatchEvent(new CustomEvent("approvalDataChanged"));
     }
+    return result;
   }, [approveOwner, refreshData]);
 
   const rejectRequestAction = useCallback(async (id: string, rejectorName: string, reason?: string): Promise<PurchaseRequest | null> => {
-    try {
-      const result = await reject(id, reason || "Ditolak tanpa alasan spesifik");
-      if (result) {
-        await refreshData();
-        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
-      }
-      return result;
-    } catch (err) {
-      console.error("Gagal menolak request:", err);
-      return null;
+    const result = await reject(id, reason || "Ditolak tanpa alasan spesifik");
+    if (result) {
+      await refreshData();
+      window.dispatchEvent(new CustomEvent("approvalDataChanged"));
     }
+    return result;
   }, [reject, refreshData]);
 
   const deleteRequestAction = useCallback(async (id: string): Promise<boolean> => {
-    try {
-      const result = await deleteApi(id);
-      if (result) {
-        await refreshData();
-        window.dispatchEvent(new CustomEvent("approvalDataChanged"));
-      }
-      return result;
-    } catch (err) {
-      console.error("Gagal menghapus request:", err);
-      return false;
+    const result = await deleteApi(id);
+    if (result) {
+      await refreshData();
+      window.dispatchEvent(new CustomEvent("approvalDataChanged"));
     }
+    return result;
   }, [deleteApi, refreshData]);
 
   // ==================== Filtered Views ====================

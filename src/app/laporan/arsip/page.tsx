@@ -69,15 +69,19 @@ function generateDailyArchives(year: number, month: number, apiReports: any[] = 
       return repDateStr === dateStr;
     });
 
-    const isLocked = dayReports.some((rep: any) => rep.status === "FINALIZED");
-    
     // Find specific reports
     const neracaReport = dayReports.find((r: any) => r.reportType === "NERACA");
     const labaRugiReport = dayReports.find((r: any) => r.reportType === "LABA_RUGI");
     const arusKasReport = dayReports.find((r: any) => r.reportType === "ARUS_KAS");
     const modalReport = dayReports.find((r: any) => r.reportType === "MODAL");
 
-    const lockedRep = dayReports.find((r: any) => r.status === "FINALIZED");
+    // Status "LOCKED" mengikuti laporan NERACA saja, konsisten dengan
+    // isPeriodLocked() di backend — itu satu-satunya laporan yang dibuat
+    // lewat alur resmi "Kunci & Arsipkan" (selalu 1 hari per laporan).
+    // Laporan jenis lain (mis. Laba Rugi custom range) tidak dihitung,
+    // supaya tanggal tidak tampil "terkunci" padahal sebenarnya masih terbuka.
+    const isLocked = neracaReport?.status === "FINALIZED";
+    const lockedRep = neracaReport?.status === "FINALIZED" ? neracaReport : undefined;
     const lockedAtTime = lockedRep?.finalizedAt 
       ? new Date(lockedRep.finalizedAt).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) + " WITA" 
       : undefined;

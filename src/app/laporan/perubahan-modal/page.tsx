@@ -15,9 +15,14 @@ export default function PerubahanModalPage() {
 
   const { equityChange: ec, balances } = reports;
 
-  // Individual modal & prive accounts for detail rows
-  const modalAccounts = accounts.filter(a => a.type === 'modal' && !a.parentId && !a.isDrawing);
-  const priveAccounts = accounts.filter(a => a.type === 'modal' && !a.parentId && a.isDrawing);
+  // Individual modal & prive accounts for detail rows — akun DAUN saja
+  // (bukan cuma akun akar) supaya akun Prive yang dibuat sebagai anak dari
+  // Modal (lewat Master Akun) tetap muncul di rincian, konsisten dengan
+  // totalnya. Pakai daun (bukan "semua level") supaya tidak dobel-hitung:
+  // saldo akun induk di `balances` sudah termasuk rollup dari anak-anaknya.
+  const hasChildren = (id: string) => accounts.some(a => a.parentId === id);
+  const modalAccounts = accounts.filter(a => a.type === 'modal' && !a.isDrawing && !hasChildren(a.id));
+  const priveAccounts = accounts.filter(a => a.type === 'modal' && a.isDrawing && !hasChildren(a.id));
 
   const handleExportCSV = () => {
     try {

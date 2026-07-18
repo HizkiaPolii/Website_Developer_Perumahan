@@ -329,10 +329,15 @@ export function useUsers() {
       setLoading(true);
       setError(null);
       const response = await call('PUT', `/api/users/${id}`, data);
+      if (response.success === false) {
+        const message = response.message || 'Gagal memperbarui user';
+        setError(message);
+        throw new Error(message);
+      }
       return response.data || null;
     } catch (err: any) {
       setError(err.message);
-      return null;
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -343,10 +348,15 @@ export function useUsers() {
       setLoading(true);
       setError(null);
       const response = await call('DELETE', `/api/users/${id}`);
-      return response.success;
+      if (!response.success) {
+        const message = response.message || 'Gagal menghapus user';
+        setError(message);
+        throw new Error(message);
+      }
+      return true;
     } catch (err: any) {
       setError(err.message);
-      return false;
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -744,7 +754,7 @@ export function usePurchaseRequests() {
       return response.data || null;
     } catch (err: any) {
       setError(err.message);
-      return null;
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -758,7 +768,7 @@ export function usePurchaseRequests() {
       return response.data || null;
     } catch (err: any) {
       setError(err.message);
-      return null;
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -772,7 +782,7 @@ export function usePurchaseRequests() {
       return response.data || null;
     } catch (err: any) {
       setError(err.message);
-      return null;
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -788,7 +798,7 @@ export function usePurchaseRequests() {
       return response.data || null;
     } catch (err: any) {
       setError(err.message);
-      return null;
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -802,7 +812,7 @@ export function usePurchaseRequests() {
       return response.success;
     } catch (err: any) {
       setError(err.message);
-      return false;
+      throw err;
     } finally {
       setLoading(false);
     }

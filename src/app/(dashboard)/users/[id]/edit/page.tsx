@@ -96,22 +96,18 @@ export default function EditUserPage() {
     try {
       setLoading(true);
 
-      const result = await update(parseInt(userId), {
+      await update(parseInt(userId), {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         role: formData.role.toLowerCase(), // Convert to lowercase untuk konsistensi
       });
 
-      if (result) {
-        addToast(`✓ User ${formData.name} berhasil diperbarui`, 'success');
-        router.push('/users');
-      } else {
-        addToast('❌ Gagal menyimpan perubahan', 'error');
-      }
-    } catch (err) {
+      addToast(`✓ User ${formData.name} berhasil diperbarui`, 'success');
+      router.push('/users');
+    } catch (err: any) {
       console.error('Update user error:', err);
-      addToast('❌ Terjadi kesalahan saat mengupdate user', 'error');
+      addToast(`❌ ${err?.message || 'Gagal menyimpan perubahan'}`, 'error');
     } finally {
       setLoading(false);
     }

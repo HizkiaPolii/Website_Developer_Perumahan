@@ -15,6 +15,17 @@ export function downloadCSV(filename: string, csvContent: string) {
   }
 }
 
+// Netralkan karakter pemicu formula (CSV/Formula Injection) — kalau sel
+// diawali =, +, -, @, tab, atau CR, Excel/Sheets bisa menjalankannya sebagai
+// formula saat file dibuka. Ini relevan karena nama akun (Master Akun) dan
+// field teks bebas lain dikontrol user, bukan cuma angka laporan.
+function sanitizeCSVCell(val: string): string {
+  if (/^[=+\-@\t\r]/.test(val)) {
+    return `'${val}`;
+  }
+  return val;
+}
+
 // Convert a 2D array of cells to a CSV string compliant with Excel
 function rowsToCSVString(rows: (string | number | boolean | null | undefined)[][]): string {
   return rows
@@ -22,7 +33,7 @@ function rowsToCSVString(rows: (string | number | boolean | null | undefined)[][
       row
         .map(cell => {
           if (cell === null || cell === undefined) return "";
-          let val = String(cell);
+          let val = sanitizeCSVCell(String(cell));
           // If the cell contains comma, double quote or newline, wrap in quotes
           if (val.includes(",") || val.includes('"') || val.includes("\n") || val.includes("\r")) {
             val = `"${val.replace(/"/g, '""')}"`;

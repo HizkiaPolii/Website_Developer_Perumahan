@@ -62,7 +62,7 @@ export default function UsersPage() {
     const user = users.find(u => u.id === id);
     if (!user) return;
 
-    if (currentUser && user.id === currentUser.id) {
+    if (currentUser && String(user.id) === String(currentUser.id)) {
       addToast("❌ Anda tidak dapat menghapus akun Anda sendiri!", "error");
       return;
     }
@@ -78,16 +78,12 @@ export default function UsersPage() {
     if (!confirmed) return;
 
     try {
-      const success = await deleteUser(id as number);
-      if (success) {
-        setUsers(users.filter(u => u.id !== id));
-        addToast(`✓ User ${user.name} berhasil dihapus`, "success");
-      } else {
-        addToast(`❌ Gagal menghapus user`, "error");
-      }
-    } catch (err) {
+      await deleteUser(id as number);
+      setUsers(users.filter(u => u.id !== id));
+      addToast(`✓ User ${user.name} berhasil dihapus`, "success");
+    } catch (err: any) {
       console.error("Delete user error:", err);
-      addToast("❌ Terjadi kesalahan saat menghapus user", "error");
+      addToast(`❌ ${err?.message || "Gagal menghapus user"}`, "error");
     }
   };
 
@@ -95,7 +91,7 @@ export default function UsersPage() {
     const user = users.find(u => u.id === id);
     if (!user) return;
 
-    if (currentUser && user.id === currentUser.id) {
+    if (currentUser && String(user.id) === String(currentUser.id)) {
       addToast("❌ Anda tidak dapat menonaktifkan akun Anda sendiri!", "error");
       return;
     }
@@ -112,16 +108,12 @@ export default function UsersPage() {
     if (!confirmed) return;
 
     try {
-      const updated = await updateUser(id as number, { isActive: !currentStatus });
-      if (updated) {
-        setUsers(users.map(u => u.id === id ? { ...u, isActive: !currentStatus } : u));
-        addToast(`✓ Status user ${user.name} berhasil diubah menjadi ${!currentStatus ? 'Aktif' : 'Nonaktif'}`, "success");
-      } else {
-        addToast(`❌ Gagal mengubah status user`, "error");
-      }
-    } catch (err) {
+      await updateUser(id as number, { isActive: !currentStatus });
+      setUsers(users.map(u => u.id === id ? { ...u, isActive: !currentStatus } : u));
+      addToast(`✓ Status user ${user.name} berhasil diubah menjadi ${!currentStatus ? 'Aktif' : 'Nonaktif'}`, "success");
+    } catch (err: any) {
       console.error("Toggle user status error:", err);
-      addToast("❌ Terjadi kesalahan saat mengubah status user", "error");
+      addToast(`❌ ${err?.message || "Gagal mengubah status user"}`, "error");
     }
   };
 

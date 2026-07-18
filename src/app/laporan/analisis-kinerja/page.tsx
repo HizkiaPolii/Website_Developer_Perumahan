@@ -252,60 +252,62 @@ export default function AnalisisKinerjaPage() {
               <p className="text-xs text-slate-400 mt-0.5">Klik baris untuk melihat detail alasan penilaian</p>
             </div>
 
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-y border-slate-200">
-                  <th className="py-3 px-4 text-center text-xs font-bold text-slate-400 uppercase w-12">#</th>
-                  <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase">Periode</th>
-                  <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase">Pendapatan</th>
-                  <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase">Laba Bersih</th>
-                  <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase min-w-40">Skor Kinerja</th>
-                  <th className="py-3 px-4 text-center text-xs font-bold text-slate-500 uppercase">Kategori</th>
-                  <th className="py-3 px-4 w-8" />
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.flatMap(row => {
-                  const isOpen = expandedRow === row.periode;
-                  const cfg = KATEGORI_CONFIG[row.kategori] ?? KATEGORI_CONFIG["Cukup"];
-                  const mainRow = (
-                    <tr
-                      key={row.periode}
-                      onClick={() => setExpandedRow(isOpen ? null : row.periode)}
-                      className="border-b border-slate-100 hover:bg-slate-50/80 cursor-pointer transition-colors"
-                    >
-                      <td className="py-3.5 px-4"><div className="flex justify-center"><MedalIcon rank={row.peringkat} /></div></td>
-                      <td className="py-3.5 px-4 font-bold text-slate-700">{row.label}</td>
-                      <td className="py-3.5 px-4 text-emerald-600 font-semibold">{formatIDR(row.pendapatan)}</td>
-                      <td className={`py-3.5 px-4 font-bold ${row.labaBersih >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                        {row.labaBersih >= 0 ? "+" : ""}{formatIDR(row.labaBersih)}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${cfg.bar} transition-all duration-700`} style={{ width: `${row.skor * 100}%` }} />
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-160">
+                <thead>
+                  <tr className="bg-slate-50 border-y border-slate-200">
+                    <th className="py-3 px-4 text-center text-xs font-bold text-slate-400 uppercase w-12">#</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase">Periode</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase">Pendapatan</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase">Laba Bersih</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase min-w-40">Skor Kinerja</th>
+                    <th className="py-3 px-4 text-center text-xs font-bold text-slate-500 uppercase">Kategori</th>
+                    <th className="py-3 px-4 w-8" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.flatMap(row => {
+                    const isOpen = expandedRow === row.periode;
+                    const cfg = KATEGORI_CONFIG[row.kategori] ?? KATEGORI_CONFIG["Cukup"];
+                    const mainRow = (
+                      <tr
+                        key={row.periode}
+                        onClick={() => setExpandedRow(isOpen ? null : row.periode)}
+                        className="border-b border-slate-100 hover:bg-slate-50/80 cursor-pointer transition-colors"
+                      >
+                        <td className="py-3.5 px-4"><div className="flex justify-center"><MedalIcon rank={row.peringkat} /></div></td>
+                        <td className="py-3.5 px-4 font-bold text-slate-700">{row.label}</td>
+                        <td className="py-3.5 px-4 text-emerald-600 font-semibold">{formatIDR(row.pendapatan)}</td>
+                        <td className={`py-3.5 px-4 font-bold ${row.labaBersih >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                          {row.labaBersih >= 0 ? "+" : ""}{formatIDR(row.labaBersih)}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${cfg.bar} transition-all duration-700`} style={{ width: `${row.skor * 100}%` }} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-700 tabular-nums w-12 text-right">{row.skor.toFixed(4)}</span>
                           </div>
-                          <span className="text-xs font-bold text-slate-700 tabular-nums w-12 text-right">{row.skor.toFixed(4)}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-center"><KategoriPill kategori={row.kategori} /></td>
-                      <td className="py-3.5 px-3 text-slate-400">
-                        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </td>
-                    </tr>
-                  );
-                  if (!isOpen) return [mainRow];
-                  return [
-                    mainRow,
-                    <tr key={`${row.periode}-detail`}>
-                      <td colSpan={7} className="p-0">
-                        <DetailRow row={row} />
-                      </td>
-                    </tr>,
-                  ];
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-3.5 px-4 text-center"><KategoriPill kategori={row.kategori} /></td>
+                        <td className="py-3.5 px-3 text-slate-400">
+                          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </td>
+                      </tr>
+                    );
+                    if (!isOpen) return [mainRow];
+                    return [
+                      mainRow,
+                      <tr key={`${row.periode}-detail`}>
+                        <td colSpan={7} className="p-0">
+                          <DetailRow row={row} />
+                        </td>
+                      </tr>,
+                    ];
+                  })}
+                </tbody>
+              </table>
+            </div>
 
             {/* Legend */}
             <div className="p-4 border-t border-slate-100 bg-slate-50/50">

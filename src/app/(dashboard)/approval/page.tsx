@@ -165,7 +165,12 @@ export default function ApprovalPage() {
       ...rows.map((row) =>
         row
           .map((val) => {
-            const stringVal = String(val);
+            let stringVal = String(val);
+            // Netralkan karakter pemicu formula (CSV Injection) — field seperti
+            // Nama Barang / Departemen / Alasan Penolakan diisi bebas oleh user.
+            if (/^[=+\-@\t\r]/.test(stringVal)) {
+              stringVal = `'${stringVal}`;
+            }
             if (stringVal.includes(",") || stringVal.includes("\"") || stringVal.includes("\n")) {
               return `"${stringVal.replace(/"/g, '""')}"`;
             }
@@ -191,16 +196,20 @@ export default function ApprovalPage() {
 
   const handleCreateRequest = async (data: { item: string; quantity: string; amount: number; department: string; description: string }) => {
     if (!user) return;
-    const result = await createRequest({
-      ...data,
-      requester: `${user.name} (${user.role})`,
-      requesterId: user.id,
-    });
-    if (result) {
-      setShowCreateModal(false);
-      addToast(`📤 Pengajuan "${data.item}" berhasil dikirim ke Manager!`, "success", 3000);
-    } else {
-      addToast("Gagal mengirim pengajuan pengadaan", "error", 3000);
+    try {
+      const result = await createRequest({
+        ...data,
+        requester: `${user.name} (${user.role})`,
+        requesterId: user.id,
+      });
+      if (result) {
+        setShowCreateModal(false);
+        addToast(`📤 Pengajuan "${data.item}" berhasil dikirim ke Manager!`, "success", 3000);
+      } else {
+        addToast("Gagal mengirim pengajuan pengadaan", "error", 3000);
+      }
+    } catch (err: any) {
+      addToast(`❌ ${err?.message || "Gagal mengirim pengajuan pengadaan"}`, "error", 4000);
     }
   };
 
@@ -221,21 +230,25 @@ export default function ApprovalPage() {
     });
     if (!confirmed) return;
 
-    let result;
-    if (isManager) {
-      result = await approveByManager(req.id, user.name);
-      if (result) {
-        addToast(`✓ Approved! Nota ${result.notaNumber} telah dibuat dan diteruskan ke Direktur.`, "success", 4000);
+    try {
+      let result;
+      if (isManager) {
+        result = await approveByManager(req.id, user.name);
+        if (result) {
+          addToast(`✓ Approved! Nota ${result.notaNumber} telah dibuat dan diteruskan ke Direktur.`, "success", 4000);
+        }
+      } else if (isOwner) {
+        result = await approveByOwner(req.id, user.name);
+        if (result) {
+          addToast(`✓✓ Berhasil! Pengadaan "${req.item}" telah disetujui Direktur. Siap untuk proses pengadaan.`, "success", 4000);
+        }
       }
-    } else if (isOwner) {
-      result = await approveByOwner(req.id, user.name);
-      if (result) {
-        addToast(`✓✓ Berhasil! Pengadaan "${req.item}" telah disetujui Direktur. Siap untuk proses pengadaan.`, "success", 4000);
-      }
-    }
 
-    if (!result) {
-      addToast("Gagal memproses. Mungkin status sudah berubah.", "error", 3000);
+      if (!result) {
+        addToast("Gagal memproses. Mungkin status sudah berubah.", "error", 3000);
+      }
+    } catch (err: any) {
+      addToast(`❌ ${err?.message || "Gagal memproses persetujuan"}`, "error", 4000);
     }
   };
 
@@ -251,11 +264,15 @@ export default function ApprovalPage() {
     });
     if (!confirmed) return;
 
-    const result = await deleteRequest(req.id);
-    if (result) {
-      addToast(`Pengajuan "${req.item}" berhasil dihapus.`, "success", 3000);
-    } else {
-      addToast("Gagal menghapus pengajuan.", "error", 3000);
+    try {
+      const result = await deleteRequest(req.id);
+      if (result) {
+        addToast(`Pengajuan "${req.item}" berhasil dihapus.`, "success", 3000);
+      } else {
+        addToast("Gagal menghapus pengajuan.", "error", 3000);
+      }
+    } catch (err: any) {
+      addToast(`❌ ${err?.message || "Gagal menghapus pengajuan"}`, "error", 4000);
     }
   };
 
@@ -271,11 +288,15 @@ export default function ApprovalPage() {
     });
     if (!confirmed) return;
 
-    const result = await rejectRequest(req.id, user.name);
-    if (result) {
-      addToast(`❌ Pengajuan ${req.id} — "${req.item}" ditolak.`, "error", 3000);
-    } else {
-      addToast("Gagal menolak pengajuan pengadaan", "error", 3000);
+    try {
+      const result = await rejectRequest(req.id, user.name);
+      if (result) {
+        addToast(`❌ Pengajuan ${req.id} — "${req.item}" ditolak.`, "error", 3000);
+      } else {
+        addToast("Gagal menolak pengajuan pengadaan", "error", 3000);
+      }
+    } catch (err: any) {
+      addToast(`❌ ${err?.message || "Gagal menolak pengajuan pengadaan"}`, "error", 4000);
     }
   };
 

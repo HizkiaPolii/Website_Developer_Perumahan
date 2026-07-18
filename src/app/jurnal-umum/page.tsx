@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import { PageHeader, Card, Btn } from "@/components/finance-ui";
 import { BookOpen, Search, ChevronDown, ChevronRight, Calendar, Printer, Hash } from "lucide-react";
 
@@ -66,6 +67,7 @@ function firstDayOfMonth(): string {
 export default function JurnalUmumPage() {
   const { call } = useApi();
   const { user } = useAuth();
+  const { addToast } = useToast();
 
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,13 +102,14 @@ export default function JurnalUmumPage() {
       } else {
         setEntries([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load journal entries:", err);
+      addToast(err?.message || "Gagal memuat jurnal umum", "error");
       setEntries([]);
     } finally {
       setLoading(false);
     }
-  }, [call, page, dateFrom, dateTo, search]);
+  }, [call, page, dateFrom, dateTo, search, addToast]);
 
   useEffect(() => {
     fetchEntries();
@@ -305,8 +308,8 @@ export default function JurnalUmumPage() {
 
                 {/* Detail Lines — expandable on screen, always shown in print */}
                 <div className={`${isExpanded ? "block" : "hidden"} print:block`}>
-                  <div className="border-t border-slate-100">
-                    <table className="w-full text-sm">
+                  <div className="border-t border-slate-100 overflow-x-auto">
+                    <table className="w-full text-sm min-w-125">
                       <thead className="bg-slate-50">
                         <tr>
                           <th className="px-5 py-2.5 text-left font-bold text-slate-500 text-xs uppercase tracking-wider w-28">Kode Akun</th>

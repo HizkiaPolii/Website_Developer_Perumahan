@@ -348,11 +348,15 @@ export function buildReports(accounts: Account[], transactions: Transaction[]): 
     labaBersih,
   };
 
-  // 6) Equity change (perubahan modal)
-  const modalRoots = accounts.filter(a => a.type === 'modal' && !a.parentId && !a.isDrawing);
-  const priveRoots = accounts.filter(a => a.type === 'modal' && !a.parentId && a.isDrawing);
-  const modalAwal = modalRoots.reduce((s, a) => s + (balances[a.id] || 0), 0);
-  const prive = Math.abs(priveRoots.reduce((s, a) => s + (balances[a.id] || 0), 0));
+  // 6) Equity change (perubahan modal) — pakai saldo langsung (leaf) tiap akun
+  // modal/prive di SEMUA level, bukan cuma akun akar. Kalau Prive dibuat
+  // sebagai akun anak dari Modal, saldo rollup-nya sudah "tertelan" ke induk;
+  // total tetap benar tapi baris Penarikan Prive akan hilang dari laporan
+  // kalau cuma akun akar yang dihitung.
+  const modalAccounts = accounts.filter(a => a.type === 'modal' && !a.isDrawing);
+  const priveAccounts = accounts.filter(a => a.type === 'modal' && a.isDrawing);
+  const modalAwal = modalAccounts.reduce((s, a) => s + (leafBalances[a.id] || 0), 0);
+  const prive = Math.abs(priveAccounts.reduce((s, a) => s + (leafBalances[a.id] || 0), 0));
   const ekuitasAkhir = modalAwal + labaBersih - prive;
 
   const equityChange: EquityChange = { modalAwal, labaBersih, prive, ekuitasAkhir };

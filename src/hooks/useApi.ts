@@ -99,7 +99,14 @@ export function useApi() {
   const call = useCallback(
     async (method: HttpMethod, endpoint: string, data?: unknown) => {
       try {
-        return await request(method, endpoint, data);
+        // throwOnHttpError: penting — tanpa ini, respons gagal dari backend
+        // ({ success: false, message: "..." }) diam-diam dikembalikan sebagai
+        // nilai normal alih-alih dilempar sebagai error. Banyak pemanggil di
+        // seluruh aplikasi hanya mengandalkan try/catch untuk menampilkan
+        // pesan kegagalan, jadi tanpa opsi ini pesan asli dari backend hilang
+        // dan beberapa alur (mis. approve transaksi) bisa salah menampilkan
+        // "berhasil" padahal backend menolaknya.
+        return await request(method, endpoint, data, { throwOnHttpError: true });
       } catch (error: unknown) {
         console.error('API call error:', getErrorMessage(error));
         throw error;
