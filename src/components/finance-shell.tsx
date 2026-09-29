@@ -60,7 +60,7 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
       { prefix: "/transaksi/approval", allowed: ["manager"] },
       { prefix: "/transaksi", allowed: ["teller", "manager", "owner"] },
       { prefix: "/jurnal-umum", allowed: ["teller", "manager", "owner"] },
-      { prefix: "/master-akun", allowed: ["teller"] },
+      { prefix: "/master-akun", allowed: ["manager"] },
       { prefix: "/laporan", allowed: ["teller", "manager", "owner"] },
       { prefix: "/approval", allowed: ["staf", "manager", "owner"] },
       { prefix: "/activity-log", allowed: ["admin", "owner"] },
@@ -103,7 +103,7 @@ export function FinanceShell({ children }: { children: React.ReactNode }) {
       items: [
         { name: "Transaksi", href: "/transaksi", icon: ArrowRightLeft, roles: ["Teller", "Manager", "Owner"] },
         { name: "Jurnal Umum", href: "/jurnal-umum", icon: BookOpen, roles: ["Teller", "Manager", "Owner"] },
-        { name: "Master Akun", href: "/master-akun", icon: Layers, roles: ["Teller"] },
+        { name: "Master Akun", href: "/master-akun", icon: Layers, roles: ["Manager"] },
       ],
     },
     {

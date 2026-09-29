@@ -17,8 +17,8 @@ export default function MasterAkunPage() {
   if (!ready) return null;
 
   const role = user?.role?.toLowerCase() || "";
-  const isCreatable = role === "teller";
-  const isDeletable = role === "teller";
+  const isCreatable = role === "manager";
+  const isDeletable = role === "manager";
 
   const { balances } = reports;
 
