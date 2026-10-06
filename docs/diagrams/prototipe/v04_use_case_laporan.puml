@@ -1,0 +1,147 @@
+@startuml v04_use_case_laporan
+title Use Case Diagram Sistem Versi Final
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 13
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam ArrowFontSize 11
+skinparam nodesep 12
+skinparam ranksep 100
+skinparam actorStyle awesome
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  FontColor #000000
+}
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+  FontColor #000000
+}
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 12
+}
+left to right direction
+
+actor "Admin" as ADMIN
+actor "Staf" as STAF
+actor "Teller" as TLR
+actor "Manager" as MGR
+actor "Owner" as OWN
+
+rectangle "Sistem Pengelolaan Perusahaan Developer Perumahan" {
+  usecase "Login" as UC_LOGIN
+  usecase "Logout" as UC_LOGOUT
+  usecase "Lihat dashboard" as UC_DASH
+  usecase "Kelola data pengguna" as UC_USER
+  usecase "Activity log" as UC_LOG
+  usecase "Input transaksi" as UC_INPUT
+  usecase "Lihat transaksi" as UC_LIHATTRX
+  usecase "Edit transaksi" as UC_EDITTRX
+  usecase "Hapus transaksi" as UC_HAPUSTRX
+  usecase "Setujui transaksi" as UC_ACCTRX
+  usecase "Tolak transaksi" as UC_TOLAKTRX
+  usecase "Masukkan alasan penolakan" as UC_ALASAN
+  usecase "Lihat jurnal umum" as UC_JURNAL
+  usecase "Kelola master akun" as UC_COA
+  usecase "Lihat laporan keuangan" as UC_LAP
+  usecase "Lihat arsip laporan" as UC_ARS
+  usecase "Kunci laporan" as UC_KUNCI
+  usecase "Lihat analisis kinerja keuangan" as UC_SAW
+  usecase "Membuat pengajuan barang" as UC_BUAT
+  usecase "Melihat status pengajuan" as UC_STATUS
+  usecase "Hapus pengajuan barang" as UC_HAPUSPB
+  usecase "Lihat pengajuan barang" as UC_LIHATPB
+  usecase "Setujui pengajuan pengadaan" as UC_ACC1
+  usecase "Setujui akhir pengajuan pengadaan" as UC_ACC2
+  usecase "Tolak pengajuan barang" as UC_TOLAKPB
+  usecase "Generate nomor nota" as UC_NOTA
+  usecase "Ekspor pengajuan CSV" as UC_CSV
+}
+
+ADMIN -- UC_LOGIN
+ADMIN -- UC_LOGOUT
+ADMIN -- UC_DASH
+ADMIN -- UC_USER
+ADMIN -- UC_LOG
+
+STAF -- UC_LOGIN
+STAF -- UC_LOGOUT
+STAF -- UC_DASH
+STAF -- UC_BUAT
+STAF -- UC_STATUS
+STAF -- UC_HAPUSPB
+STAF -- UC_CSV
+
+UC_LOGIN -- TLR
+UC_LOGOUT -- TLR
+UC_DASH -- TLR
+UC_INPUT -- TLR
+UC_LIHATTRX -- TLR
+UC_EDITTRX -- TLR
+UC_HAPUSTRX -- TLR
+UC_JURNAL -- TLR
+UC_LAP -- TLR
+UC_ARS -- TLR
+
+UC_LOGIN -- MGR
+UC_LOGOUT -- MGR
+UC_DASH -- MGR
+UC_LIHATTRX -- MGR
+UC_ACCTRX -- MGR
+UC_TOLAKTRX -- MGR
+UC_JURNAL -- MGR
+UC_COA -- MGR
+UC_LAP -- MGR
+UC_ARS -- MGR
+UC_KUNCI -- MGR
+UC_SAW -- MGR
+UC_LIHATPB -- MGR
+UC_ACC1 -- MGR
+UC_TOLAKPB -- MGR
+UC_CSV -- MGR
+
+UC_LOGIN -- OWN
+UC_LOGOUT -- OWN
+UC_DASH -- OWN
+UC_LOG -- OWN
+UC_LIHATTRX -- OWN
+UC_JURNAL -- OWN
+UC_LAP -- OWN
+UC_ARS -- OWN
+UC_SAW -- OWN
+UC_LIHATPB -- OWN
+UC_ACC2 -- OWN
+UC_TOLAKPB -- OWN
+UC_CSV -- OWN
+
+UC_ACC1 ..> UC_NOTA : <<include>>
+UC_TOLAKTRX ..> UC_ALASAN : <<include>>
+UC_EDITTRX ..> UC_LIHATTRX : <<extend>>
+UC_HAPUSTRX ..> UC_LIHATTRX : <<extend>>
+UC_KUNCI ..> UC_ARS : <<extend>>
+UC_HAPUSPB ..> UC_STATUS : <<extend>>
+
+note as N1
+  Seluruh use case mensyaratkan pengguna telah login.
+  Edit transaksi dan Hapus transaksi hanya untuk
+  transaksi berstatus DRAFT, PENDING, atau REJECTED.
+  Kunci laporan hanya untuk hari yang statusnya terbuka.
+  Hapus pengajuan barang hanya untuk pengajuan
+  berstatus Pending dan milik sendiri.
+end note
+
+@enduml

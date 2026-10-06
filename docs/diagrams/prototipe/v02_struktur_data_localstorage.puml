@@ -1,0 +1,89 @@
+@startuml v02_struktur_data_localstorage
+title Struktur Data localStorage Prototipe v0.2\n(commit d722d48 - 5 Juni 2026)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam ArrowFontSize 11
+skinparam nodesep 18
+skinparam ranksep 28
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 11
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+  AttributeFontColor #000000
+  HeaderBackgroundColor #EFEFEF
+}
+hide circle
+hide methods
+top to bottom direction
+
+class "prodev_accounts : Account[]" as ACC {
+  id : string
+  code : string
+  name : string
+  type : 'aset' | 'kewajiban' | 'modal' | 'pendapatan' | 'beban'
+  parentId : string | null
+  isCash : boolean
+  isDrawing : boolean
+  isFixedAsset : boolean (opsional)
+}
+
+class "prodev_transactions : Transaction[]" as TRX {
+  id : string
+  date : string
+  description : string
+  debitAccountId : string
+  creditAccountId : string
+  amount : number
+}
+
+class "purchaseRequests : PurchaseRequest[]" as PR {
+  id : string  (format PR-TAHUN-NNN)
+  item : string
+  quantity : string
+  amount : number
+  requester : string
+  requesterId : string
+  department : string
+  date : string
+  status : 'Pending' | 'ACC Manager' | 'ACC Final' | 'Tolak'
+  description : string
+  notaNumber : string (opsional)
+  createdAt : string
+  approvedByManager, approvedByManagerAt
+  approvedByOwner, approvedByOwnerAt
+  rejectedBy, rejectedAt, rejectionReason
+}
+
+class "Kunci penunjang" as AUX {
+  purchaseRequestCounter : number  (nomor urut pengajuan)
+  token : string  (token JWT)
+  user : JSON  (data pengguna yang sedang masuk)
+  loginTime : number  (stempel waktu login)
+}
+
+ACC "1" <-down- "0..*" TRX : akun debit (debitAccountId)
+ACC "1" <-down- "0..*" TRX : akun kredit (creditAccountId)
+ACC "1" <-left- "0..*" ACC : induk akun (parentId)
+PR .down.> AUX : nomor urut diambil dari\npurchaseRequestCounter
+
+note bottom of AUX
+  Seluruh data usaha pada versi ini disimpan di peramban
+  pengguna melalui localStorage, belum menggunakan basis
+  data server. Data awal diisi dari defaultAccounts dan
+  defaultTransactions pada berkas src/lib/accounting.ts.
+end note
+
+@enduml

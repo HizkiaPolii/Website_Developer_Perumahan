@@ -1,0 +1,107 @@
+@startuml v01_use_case_laporan
+title Use Case Diagram Prototipe v0.1
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 13
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam nodesep 12
+skinparam ranksep 90
+skinparam actorStyle awesome
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  FontColor #000000
+}
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+  FontColor #000000
+}
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 12
+}
+left to right direction
+
+actor "Admin" as ADMIN
+actor "Marketing" as MKT
+actor "Manager" as MGR
+actor "Owner" as OWN
+
+rectangle "Sistem Prototipe v0.1" {
+  usecase "Login" as UC_LOGIN
+  usecase "Logout" as UC_LOGOUT
+  usecase "Lihat dashboard" as UC_DASH
+  usecase "Kelola data pengguna" as UC_USER
+  usecase "Activity log" as UC_LOG
+  usecase "Lihat transaksi" as UC_TRX
+  usecase "Lihat laporan neraca" as UC_NER
+  usecase "Lihat laporan laba rugi" as UC_LR
+  usecase "Lihat arsip laporan" as UC_ARS
+  usecase "Lihat pemesanan unit" as UC_BOOK
+  usecase "Setujui pemesanan unit" as UC_ACC1
+  usecase "Setujui akhir pemesanan unit" as UC_ACC2
+  usecase "Tolak pemesanan unit" as UC_TOLAK
+}
+
+ADMIN -- UC_LOGIN
+ADMIN -- UC_LOGOUT
+ADMIN -- UC_DASH
+ADMIN -- UC_USER
+ADMIN -- UC_LOG
+ADMIN -- UC_TRX
+ADMIN -- UC_NER
+ADMIN -- UC_LR
+ADMIN -- UC_ARS
+
+MKT -- UC_LOGIN
+MKT -- UC_LOGOUT
+MKT -- UC_DASH
+
+UC_LOGIN -- MGR
+UC_LOGOUT -- MGR
+UC_DASH -- MGR
+UC_LOG -- MGR
+UC_TRX -- MGR
+UC_NER -- MGR
+UC_LR -- MGR
+UC_ARS -- MGR
+UC_BOOK -- MGR
+UC_ACC1 -- MGR
+UC_TOLAK -- MGR
+
+UC_LOGIN -- OWN
+UC_LOGOUT -- OWN
+UC_DASH -- OWN
+UC_LOG -- OWN
+UC_TRX -- OWN
+UC_NER -- OWN
+UC_LR -- OWN
+UC_ARS -- OWN
+UC_BOOK -- OWN
+UC_ACC2 -- OWN
+UC_TOLAK -- OWN
+
+note as N1
+  Seluruh use case mensyaratkan pengguna telah login.
+  Isi halaman Lihat transaksi, Lihat laporan neraca,
+  Lihat laporan laba rugi, Lihat arsip laporan, dan
+  Lihat pemesanan unit pada versi ini masih berupa
+  data contoh.
+  Pembatasan akses baru diterapkan pada menu dan
+  halaman di frontend; backend belum memeriksa peran.
+end note
+
+@enduml

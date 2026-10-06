@@ -1,0 +1,62 @@
+@startuml activity-diagram-login-autentikasi
+title Activity Diagram - Alur Login dan Autentikasi
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundCorner 14
+skinparam ArrowColor #333333
+
+skinparam activity {
+  BackgroundColor #F2F2F2
+  BorderColor #333333
+  FontColor #000000
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #333333
+  DiamondFontColor #000000
+  StartColor #000000
+  EndColor #000000
+}
+
+skinparam partition {
+  BackgroundColor #FAFAFA
+  BorderColor #555555
+  FontColor #000000
+  FontStyle bold
+}
+
+|Pengguna|
+start
+:Buka Halaman Login;
+
+repeat
+  :Isi Form Login\n(Email, Password);
+  :Klik Submit;
+
+  |Sistem|
+  :Cek Email Terdaftar;
+  if (Ditemukan?) then (Ya)
+    :Cek Status Akun;
+    if (Aktif?) then (Ya)
+      :Cocokkan Password (Bcrypt);
+      if (Cocok?) then (Ya)
+        :Generate Token JWT;
+        :Catat Log Aktivitas Login;
+      else (Tidak)
+        :Tampilkan Pesan Error;
+      endif
+    else (Tidak)
+      :Tampilkan Pesan Error;
+    endif
+  else (Tidak)
+    :Tampilkan Pesan Error;
+  endif
+
+  |Pengguna|
+repeat while (Login Berhasil?) is (Tidak) not (Ya)
+
+:Diarahkan ke Dashboard;
+stop
+
+@enduml

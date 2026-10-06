@@ -1,0 +1,83 @@
+@startuml v01_struktur_halaman
+title Struktur Halaman Prototipe v0.1\n(commit 74192e6 - 29 April 2026)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 11
+}
+skinparam nodesep 16
+skinparam ranksep 22
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #555555
+  FontColor #000000
+  FontStyle bold
+}
+top to bottom direction
+
+rectangle "Halaman Login\n/login" as LOGIN #EFEFEF
+
+package "Area Terlindungi (layout dashboard)" {
+
+  rectangle "Dashboard\n/" as DASH
+
+  package "Keuangan" {
+    rectangle "Manajemen Transaksi\n/transactions\n[Admin, Manager, Owner]" as TRX
+    rectangle "Laporan Neraca\n/reports/balance-sheet\n[Admin, Manager, Owner]" as NER
+    rectangle "Laporan Laba Rugi\n/reports/income-statement\n[Admin, Manager, Owner]" as LR
+    rectangle "Pengarsipan Laporan\n/reports/archive\n[Admin, Manager, Owner]" as ARS
+  }
+
+  package "Administrasi" {
+    rectangle "Halaman Approval\n/approval\n[Manager, Owner]" as APP
+    rectangle "Manajemen User\n/users\n[Admin]" as USR
+    rectangle "Tambah User\n/users/add" as USRA
+    rectangle "Ubah User\n/users/[id]/edit" as USRE
+    rectangle "Activity Log\n/activity-log\n[Admin, Manager, Owner]" as LOG
+  }
+}
+
+LOGIN --> DASH : login berhasil\n(token JWT disimpan)
+
+DASH --> TRX
+DASH --> APP
+
+TRX -[hidden]down- NER
+NER -[hidden]down- LR
+LR -[hidden]down- ARS
+
+APP -[hidden]down- USR
+USR --> USRA
+USRA -[hidden]down- USRE
+USR --> USRE
+USRE -[hidden]down- LOG
+
+note bottom of ARS
+  Sumber data seluruh halaman transaksi
+  dan laporan pada versi ini masih berupa
+  data contoh (dummy) di dalam berkas
+  halaman, belum terhubung basis data.
+end note
+
+note bottom of LOG
+  Peran yang dikenali sidebar pada
+  versi ini: Admin, Marketing,
+  Manager, Owner.
+end note
+
+@enduml

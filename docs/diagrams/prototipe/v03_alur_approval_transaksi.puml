@@ -1,0 +1,89 @@
+@startuml v03_alur_approval_transaksi
+title Alur Persetujuan Transaksi Prototipe v0.3\n(commit backend b322238 - src/controllers/transactionController.ts, src/routes/transactions.ts)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 11
+}
+skinparam ArrowFontSize 11
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #333333
+  DiamondFontColor #000000
+  StartColor #333333
+  EndColor #333333
+  BarColor #333333
+}
+skinparam partition {
+  BorderColor #555555
+  FontColor #000000
+  FontStyle bold
+}
+
+|Teller|
+start
+:Mengisi formulir transaksi\n(tanggal, jenis, keterangan,\nakun debit, akun kredit, nominal);
+:Kirim POST /api/transactions;
+
+|Sistem (Backend)|
+:Periksa hak akses peran\n(roleMiddleware "teller");
+:Simpan transaksi\nstatus DRAFT atau PENDING;
+
+|Manager|
+:Buka daftar transaksi berstatus PENDING;
+if (Keputusan Manager?) then ([setujui])
+  :Kirim POST /api/transactions/:id/approve;
+
+  |Sistem (Backend)|
+  :Periksa hak akses peran\n(roleMiddleware "manager");
+  if (Status transaksi = PENDING?) then ([tidak])
+    :Tolak permintaan\n"Can only approve PENDING transactions";
+    stop
+  else ([ya])
+  endif
+  if (Periode laporan sudah dikunci?) then ([ya])
+    :Tolak permintaan\n"periode telah difinalisasi (Locked)";
+    stop
+  else ([tidak])
+  endif
+
+  partition "Satu Transaksi Basis Data (prisma.$transaction)" {
+    :Buat entri Jurnal Umum\nnomor JE/<companyId>/<stempel waktu>;
+    :Buat dua baris jurnal\nbaris 1: akun debit, debit = nominal\nbaris 2: akun kredit, kredit = nominal;
+    :Ubah status transaksi menjadi POSTED\nsimpan approvedBy dan approvedAt;
+  }
+  :Kirim tanggapan berhasil;
+  |Manager|
+  :Transaksi tampil di Jurnal Umum\ndan ikut dihitung pada laporan;
+  stop
+
+else ([tolak])
+  :Isi alasan penolakan;
+  :Kirim POST /api/transactions/:id/reject;
+
+  |Sistem (Backend)|
+  if (Alasan penolakan diisi?) then ([tidak])
+    :Tolak permintaan\n"rejectionReason is required";
+    stop
+  else ([ya])
+  endif
+  :Ubah status transaksi menjadi REJECTED\nsimpan alasan penolakan;
+  |Teller|
+  :Melihat transaksi berstatus REJECTED\nbeserta alasannya;
+  stop
+endif
+
+@enduml

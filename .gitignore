@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dokumen skripsi & HKI (pribadi, tidak diperlukan untuk build)
+/docs/*.docx
+/docs/*.pdf
+/docs/KONTEKS_BAB_IV.md
+/docs/Draft_Contoh_Ciptaan.md
+
+# gambar hasil bangkitan (dapat dibuat ulang dari berkas sumbernya)
+/docs/diagrams/**/*.png
+/docs/diagrams/arsip-barker

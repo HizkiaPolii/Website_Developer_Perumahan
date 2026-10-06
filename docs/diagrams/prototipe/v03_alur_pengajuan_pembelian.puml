@@ -1,0 +1,60 @@
+@startuml v03_alur_pengajuan_pembelian
+title Alur Pengajuan Pembelian Bertingkat Prototipe v0.3\n(commit backend b322238 - src/controllers/purchaseRequestController.ts, src/routes/purchaseRequests.ts)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam ArrowFontSize 11
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+  StartColor #333333
+  EndColor #333333
+}
+skinparam note {
+  BackgroundColor #F7F7F7
+  BorderColor #555555
+  FontColor #000000
+}
+
+[*] --> Pending : Staf mengajukan\nPOST /api/purchase-requests\nnomor otomatis PR-TAHUN-NNN
+
+state "Pending\n(menunggu Manager)" as Pending
+state "ACC Manager\n(disetujui tingkat 1)" as AccManager
+state "ACC Final\n(disetujui Direktur)" as AccFinal
+state "Tolak" as Tolak
+
+Pending --> AccManager : Manager menyetujui\nPOST /:id/approve-manager\nsistem menerbitkan nomor nota
+Pending --> Tolak : Manager atau Owner menolak\nPOST /:id/reject
+AccManager --> AccFinal : Owner (Direktur) menyetujui akhir\nPOST /:id/approve-owner
+AccManager --> Tolak : Manager atau Owner menolak\nPOST /:id/reject
+
+AccFinal --> [*]
+Tolak --> [*]
+
+note right of Pending
+  Hanya pengajuan berstatus Pending
+  yang dapat disetujui Manager.
+  Peran yang diizinkan mengajukan:
+  staf, teller, admin, manager, owner.
+end note
+
+note right of AccManager
+  Persetujuan akhir hanya dapat
+  dilakukan bila status sudah
+  ACC Manager. Peran yang diizinkan:
+  owner dan admin.
+end note
+
+note bottom of Tolak
+  Penolakan menyimpan rejectedBy,
+  rejectedAt, dan rejectionReason.
+end note
+
+@enduml

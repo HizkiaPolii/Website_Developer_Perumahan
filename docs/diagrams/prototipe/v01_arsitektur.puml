@@ -1,0 +1,76 @@
+@startuml v01_arsitektur
+title Arsitektur Dasar Prototipe v0.1\n(frontend 74192e6 - 29 April 2026, backend 6adffdf - 28 April 2026)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam ArrowFontSize 11
+skinparam nodesep 18
+skinparam ranksep 26
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor #F0F0F0
+  BorderColor #333333
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #555555
+  FontColor #000000
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 11
+}
+top to bottom direction
+
+rectangle "Peramban Pengguna" as BROWSER #EFEFEF
+
+package "Aplikasi Frontend (Next.js)" {
+  rectangle "Halaman Antarmuka\nlogin, dashboard, transaksi, laporan neraca,\nlaporan laba rugi, arsip laporan, approval,\nmanajemen pengguna, activity log" as PAGES
+  rectangle "AuthContext\npenyimpanan token JWT dan data pengguna\npada localStorage peramban" as AUTHCTX
+  rectangle "Route Handler (proksi sisi server)\n\nPOST   /api/auth/login\nGET    /api/auth/verify\nGET, POST   /api/users\nGET, PUT, DELETE   /api/users/[id]" as RH
+}
+
+package "Aplikasi Backend (Express.js)" {
+  rectangle "authMiddleware\nverifikasi token JWT pada setiap permintaan" as AUTHMW
+  rectangle "Endpoint REST\n\n/api/auth              login, register, verify\n/api/users             CRUD pengguna\n/api/activity-logs     pencatatan aktivitas\n/api/units             CRUD unit properti\n/api/bookings          pemesanan unit" as EP
+  rectangle "Prisma ORM" as PRISMA
+}
+
+database "PostgreSQL\n\ntabel: users, units,\nbookings, activity_logs" as DB
+
+BROWSER --> PAGES : membuka halaman
+PAGES --> AUTHCTX : simpan / baca token
+PAGES --> RH : panggil dari peramban
+RH --> AUTHMW : HTTP JSON\nhttp://localhost:5000
+AUTHMW --> EP : token sah
+EP --> PRISMA
+PRISMA --> DB : kueri SQL
+
+note right of RH
+  Permintaan diteruskan ke backend
+  Express dari sisi server Next.js,
+  bukan langsung dari peramban.
+end note
+
+note right of EP
+  Endpoint unit dan pemesanan masih
+  tersedia di backend, namun halaman
+  /units dan /booking sudah dihapus
+  dari frontend pada commit 74192e6.
+end note
+
+@enduml

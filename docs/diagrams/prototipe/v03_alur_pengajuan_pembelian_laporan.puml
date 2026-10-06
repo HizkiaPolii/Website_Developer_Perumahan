@@ -1,0 +1,52 @@
+@startuml v03_alur_pengajuan_pembelian_laporan
+title Alur Status Pengajuan Pembelian Prototipe v0.3
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 13
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam ArrowFontSize 12
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 12
+}
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+  StartColor #333333
+  EndColor #333333
+}
+
+[*] --> Pending : Staf mengajukan\n(nomor pengajuan dibuat otomatis)
+
+state "Pending\n(menunggu Manager)" as Pending
+state "ACC Manager\n(disetujui tingkat 1)" as AccManager
+state "ACC Final\n(disetujui Direktur)" as AccFinal
+state "Tolak" as Tolak
+
+Pending --> AccManager : Manager menyetujui\n(nomor nota diterbitkan)
+Pending --> Tolak : Manager atau Owner menolak
+AccManager --> AccFinal : Owner menyetujui akhir
+AccManager --> Tolak : Manager atau Owner menolak
+
+AccFinal --> [*]
+Tolak --> [*]
+
+note right of AccManager
+  Persetujuan akhir hanya dapat dilakukan
+  apabila pengajuan sudah disetujui Manager.
+end note
+
+note bottom of Tolak
+  Penolakan mencatat siapa yang menolak,
+  waktu penolakan, dan alasannya.
+end note
+
+@enduml

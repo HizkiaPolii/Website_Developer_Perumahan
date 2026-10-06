@@ -1,0 +1,90 @@
+@startuml v01_struktur_halaman_laporan
+title Struktur Halaman Prototipe v0.1
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 13
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam ArrowFontSize 12
+skinparam nodesep 16
+skinparam ranksep 22
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 12
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #555555
+  FontColor #000000
+  FontStyle bold
+}
+top to bottom direction
+
+rectangle "Halaman Login" as LOGIN #EFEFEF
+
+package "Area Terlindungi" {
+
+  rectangle "Dashboard" as DASH
+
+  package "Keuangan" {
+    rectangle "Transaksi\n[Admin, Manager, Owner]" as TRX
+    rectangle "Laporan Neraca\n[Admin, Manager, Owner]" as NER
+    rectangle "Laporan Laba Rugi\n[Admin, Manager, Owner]" as LR
+    rectangle "Arsip Laporan\n[Admin, Manager, Owner]" as ARS
+  }
+
+  package "Administrasi" {
+    rectangle "Halaman Approval\n[Manager, Owner]" as APP
+    rectangle "Manajemen Pengguna\n[Admin]" as USR
+    rectangle "Tambah Pengguna\n[Admin]" as USRA
+    rectangle "Ubah Pengguna\n[Admin]" as USRE
+    rectangle "Activity Log\n[Admin, Manager, Owner]" as LOG
+  }
+}
+
+LOGIN --> DASH : login berhasil
+
+DASH --> TRX
+DASH --> APP
+
+TRX -[hidden]down- NER
+NER -[hidden]down- LR
+LR -[hidden]down- ARS
+
+APP -[hidden]down- USR
+USR --> USRA
+USRA -[hidden]down- USRE
+USR --> USRE
+USRE -[hidden]down- LOG
+
+note bottom of ARS
+  Isi halaman Transaksi, Laporan Neraca,
+  dan Laporan Laba Rugi pada versi ini
+  masih berupa data contoh, belum
+  terhubung dengan basis data.
+end note
+
+note bottom of APP
+  Pada versi ini Halaman Approval masih
+  menangani persetujuan pemesanan unit,
+  belum menangani Approval Transaksi
+  maupun Approval Pengadaan.
+end note
+
+note bottom of LOG
+  Peran yang dikenali pada versi ini:
+  Admin, Marketing, Manager, dan Owner.
+end note
+
+@enduml

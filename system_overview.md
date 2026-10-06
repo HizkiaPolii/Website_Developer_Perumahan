@@ -229,10 +229,10 @@ graph TD
     end
 
     Admin --> D & MU & AL
-    Manager --> D & T & TA & LN & LLR & LAK & LPM & PA & AP
+    Manager --> D & T & TA & LN & LLR & LAK & LPM & PA & AP & MA
     Owner --> D & T & LN & LLR & LAK & LPM & PA & AP & AL
     Staf --> D & AP
-    Teller --> D & T & MA
+    Teller --> D & T
 ```
 
 | Fitur | Admin | Manager | Owner | Staf | Teller |
@@ -245,10 +245,11 @@ graph TD
 | Approval Pengadaan | ❌ | ✅ | ✅ | ✅ | ❌ |
 | Manajemen User | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Activity Log | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Master Akun / COA | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Master Akun / COA | ❌ | ✅ | ❌ | ❌ | ❌ |
 
 > [!IMPORTANT]
-> **Owner** tidak bisa mengakses Master Akun (Chart of Accounts) — ini sudah dibatasi baik di frontend (sidebar/routing) maupun di backend (controller level). Lihat conversation sebelumnya.
+> **Master Akun (Chart of Accounts)** dikelola oleh **Manager** (hasil revisi) — sebelumnya milik Teller. Pembatasan diterapkan di frontend (sidebar + route guard `finance-shell.tsx`) dan backend (`routes/chartOfAccounts.ts`: POST/PUT/DELETE hanya `manager`).
+> Teller & Owner tetap punya akses **baca** daftar akun lewat API (dibutuhkan form transaksi dan penyusunan laporan), tetapi tidak punya menu Master Akun.
 
 ---
 

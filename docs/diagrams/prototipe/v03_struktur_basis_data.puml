@@ -1,0 +1,209 @@
+@startuml v03_struktur_basis_data
+title Struktur Basis Data Prototipe v0.3\n(commit backend b322238 - 29 Juni 2026, berkas prisma/schema.prisma)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 11
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 11
+}
+skinparam ArrowFontSize 10
+skinparam nodesep 22
+skinparam ranksep 34
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+  AttributeFontColor #000000
+  HeaderBackgroundColor #EFEFEF
+  FontStyle bold
+}
+hide circle
+hide methods
+left to right direction
+
+entity "companies" as CO {
+  **PK id**
+  --
+  companyName
+  companyCode (unik)
+  address, city, postalCode
+  phone, email
+  fiscalYearStart
+  isActive
+}
+
+entity "users" as US {
+  **PK id**
+  --
+  email (unik)
+  name, phone, password
+  role
+  department
+  isActive, lastLogin
+  **FK companyId**
+}
+
+entity "activity_logs" as AL {
+  **PK id**
+  --
+  action, details
+  createdAt
+  **FK userId**
+}
+
+entity "chart_of_accounts" as COA {
+  **PK id**
+  --
+  accountCode (unik)
+  accountName
+  accountType
+  level, isActive
+  isCashFlow
+  description
+  **FK companyId**
+  **FK parentId**
+}
+
+entity "transactions" as TR {
+  **PK id**
+  --
+  transactionCode (unik)
+  transactionDate
+  transactionType
+  description, category
+  referenceNo
+  amount (desimal 15,2)
+  status
+  approvedAt, rejectionReason
+  **FK companyId**
+  **FK userId**
+  **FK debitAccountId**
+  **FK creditAccountId**
+  **FK approvedBy**
+}
+
+entity "journal_entries" as JE {
+  **PK id**
+  --
+  journalNo (unik)
+  journalDate
+  description
+  isPosted, postedAt
+  approvedAt
+  **FK companyId**
+  **FK userId**
+  **FK transactionId (unik)**
+  **FK approvedBy**
+}
+
+entity "journal_entry_lines" as JEL {
+  **PK id**
+  --
+  debit (desimal 15,2)
+  credit (desimal 15,2)
+  description
+  **FK journalEntryId**
+  **FK accountId**
+}
+
+entity "account_balances" as AB {
+  **PK id**
+  --
+  periodDate, periodType
+  openingBalance
+  debitTotal, creditTotal
+  closingBalance
+  **FK companyId**
+  **FK accountId**
+}
+
+entity "financial_reports" as FR {
+  **PK id**
+  --
+  reportType
+  reportDate
+  periodStart, periodEnd
+  status
+  reportData (JSON)
+  finalizedAt, notes
+  **FK companyId**
+  **FK createdBy**
+  **FK finalizedBy**
+}
+
+entity "balance_sheet_items" as BSI {
+  **PK id**
+  --
+  accountCode, accountName
+  balance, level
+  isParent, sortOrder
+  **FK reportId**
+  **FK parentId**
+}
+
+entity "income_statement_items" as ISI {
+  **PK id**
+  --
+  accountCode, accountName
+  balance, level
+  isParent, sortOrder
+  **FK reportId**
+  **FK parentId**
+}
+
+entity "purchase_requests" as PR {
+  **PK id**
+  --
+  prCode (unik)
+  item, quantity, amount
+  department
+  status
+  description
+  notaNumber (unik)
+  approvedByManager / At
+  approvedByOwner / At
+  rejectedBy / At / rejectionReason
+  **FK companyId**
+  **FK requesterId**
+}
+
+CO ||--o{ US
+CO ||--o{ COA
+CO ||--o{ TR
+CO ||--o{ JE
+CO ||--o{ AB
+CO ||--o{ FR
+CO ||--o{ PR
+
+US ||--o{ AL : mencatat
+US ||--o{ TR : menginput
+US ||--o{ TR : menyetujui
+US ||--o{ JE : membuat
+US ||--o{ FR : membuat
+US ||--o{ FR : memfinalisasi
+US ||--o{ PR : mengajukan
+
+COA ||--o{ COA : induk akun
+COA ||--o{ TR : akun debit
+COA ||--o{ TR : akun kredit
+COA ||--o{ JEL
+COA ||--o{ AB
+
+TR ||--o| JE : menghasilkan
+JE ||--o{ JEL : terdiri atas
+
+FR ||--o{ BSI
+FR ||--o{ ISI
+BSI ||--o{ BSI : induk pos
+ISI ||--o{ ISI : induk pos
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml sequence-login
+actor User
+participant "Browser\n(Next.js)" as B
+participant "Backend\n(Express.js)" as S
+participant "Database\n(PostgreSQL)" as D
+
+User -> B : Input email dan kata sandi
+B -> S : Kirim permintaan login
+S -> D : Cari data pengguna berdasarkan email
+D --> S : Data pengguna ditemukan
+S -> S : Verifikasi kata sandi
+
+alt sandi benar
+  S -> S : Buat token sesi yang memuat\nid, email, dan role pengguna
+  S --> B : Login berhasil, kirim token\ndan data pengguna
+  B -> B : Simpan token sesi
+  B --> User : Arahkan ke Dashboard sesuai role
+else sandi salah
+  S --> B : Login gagal
+  B --> User : Tampilkan pesan kesalahan
+end
+@enduml

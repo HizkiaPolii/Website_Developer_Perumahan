@@ -1,0 +1,90 @@
+@startuml v02_struktur_data_laporan
+title Struktur Data Prototipe v0.2
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 13
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam ArrowFontSize 12
+skinparam nodesep 45
+skinparam ranksep 65
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 12
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+  AttributeFontColor #000000
+  AttributeFontSize 13
+  HeaderBackgroundColor #EFEFEF
+}
+hide circle
+hide methods
+top to bottom direction
+
+class "Akun" as ACC {
+  pengenal
+  kode
+  nama
+  jenis : aset, kewajiban, modal, pendapatan, beban
+  induk akun
+  penanda akun kas
+  penanda pengambilan pribadi
+  {field} penanda aset tetap (opsional)
+}
+
+class "Transaksi" as TRX {
+  pengenal
+  tanggal
+  keterangan
+  akun debit
+  akun kredit
+  nominal
+}
+
+class "Pengajuan Pembelian" as PR {
+  nomor pengajuan
+  barang
+  jumlah
+  nominal
+  pemohon
+  pengenal pemohon
+  bagian
+  tanggal
+  status : Pending, ACC Manager, ACC Final, Tolak
+  keterangan
+  nomor nota
+  waktu pengajuan dibuat
+  penyetuju Manager dan waktunya
+  penyetuju Owner dan waktunya
+  penolak, waktu penolakan, dan alasannya
+}
+
+ACC "1" <-- "0..*" TRX : akun debit  
+ACC "1" <-- "0..*" TRX :   akun kredit
+ACC "1" <-left- "0..*" ACC : induk akun
+
+TRX -[hidden]down- PR
+
+note bottom of PR
+  Nomor pengajuan dibuat otomatis secara berurutan
+  dengan pola PR-TAHUN-NOMOR URUT, dan nomor nota
+  diterbitkan saat pengajuan disetujui Manager.
+end note
+
+note bottom of ACC
+  Seluruh data pada versi ini disimpan di peramban
+  pengguna, belum menggunakan basis data server.
+  Data awal diisi secara otomatis ketika penyimpanan
+  masih kosong.
+end note
+
+@enduml

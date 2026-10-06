@@ -1,0 +1,76 @@
+@startuml v02_alur_laporan
+title Alur Perhitungan Laporan Keuangan Prototipe v0.2\n(commit d722d48 - berkas src/lib/accounting.ts, fungsi buildReports)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 300
+skinparam defaultFontName "Calibri"
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1
+skinparam note {
+  BackgroundColor #F2F2F2
+  BorderColor #555555
+  FontColor #000000
+  FontSize 11
+}
+skinparam ArrowFontSize 11
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  BorderThickness 1
+  FontColor #000000
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #333333
+  DiamondFontColor #000000
+  StartColor #333333
+  EndColor #333333
+  BarColor #333333
+}
+skinparam partition {
+  BorderColor #555555
+  FontColor #000000
+  FontStyle bold
+}
+
+start
+
+:Pengguna membuka halaman laporan;
+
+partition "Pemuatan Data (useAccountingStore)" {
+  if (Kunci prodev_accounts dan\nprodev_transactions sudah ada?) then ([ya])
+    :Baca daftar akun dan transaksi\ndari localStorage;
+  else ([tidak])
+    :Isi dengan data bawaan\n(defaultAccounts, defaultTransactions);
+    :Simpan data bawaan ke localStorage;
+  endif
+}
+
+partition "Perhitungan (buildReports)" {
+  :Langkah 1 - Hitung saldo akun terbawah\nAset dan Beban: debit menambah, kredit mengurangi\nKewajiban, Modal, Pendapatan: kredit menambah, debit mengurangi;
+  :Langkah 2 - Jumlahkan saldo anak ke akun induk\n(diurutkan dari akun terdalam);
+  :Langkah 3 - Susun Laporan Arus Kas\nkelompokkan tiap transaksi menurut\njenis akun lawan dari akun kas;
+  note right
+    Operasional : akun lawan pendapatan,
+      beban, atau aset lancar
+    Investasi   : akun lawan aset tetap
+    Pendanaan   : akun lawan kewajiban
+      atau modal
+    Transaksi antar akun kas diabaikan
+  end note
+  :Langkah 4 - Bentuk susunan akun berjenjang\nper jenis akun (buildNodes);
+  :Langkah 5 - Susun Laporan Laba Rugi\nLaba Bersih = Total Pendapatan - Total Beban;
+  :Langkah 6 - Susun Laporan Perubahan Modal\nEkuitas Akhir = Modal Awal + Laba Bersih - Prive;
+  :Langkah 7 - Susun Laporan Neraca\nTotal Pasiva = Total Kewajiban + Ekuitas Akhir;
+  if (Selisih Total Aset dengan\nTotal Pasiva kurang dari 1?) then ([ya])
+    :Tandai neraca seimbang\n(isBalanced = benar);
+  else ([tidak])
+    :Tandai neraca tidak seimbang\ndan simpan nilai selisih;
+  endif
+}
+
+:Tampilkan keempat laporan\n(Arus Kas, Laba Rugi,\nPerubahan Modal, Neraca);
+
+stop
+
+@enduml

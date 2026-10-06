@@ -107,7 +107,7 @@
     const UC = {
         login:       { x: 800, y: 450, rx: 75,  ry: 23, label: 'Login' },
         dashboard:   { x: 590, y: 140, rx: 105, ry: 24, label: 'Lihat Dashboard' },
-        masterAkun:  { x: 465, y: 280, rx: 95,  ry: 30, label: ['Kelola', 'Master Akun'] },
+        masterAkun:  { x: 1105, y: 900, rx: 95,  ry: 30, label: ['Kelola', 'Master Akun'] },
         transaksi:   { x: 475, y: 555, rx: 85,  ry: 30, label: ['Kelola', 'Transaksi'] },
         approvalTrx: { x: 1065, y: 640, rx: 88, ry: 30, label: ['Approval', 'Transaksi'] },
         approvalPgd: { x: 620, y: 830, rx: 90,  ry: 30, label: ['Approval', 'Pengadaan'] },
@@ -168,10 +168,10 @@
        5. SOLID LINES — Actor → Use Case
        ═══════════════════════════════════════════ */
     const SOLID = [
-        ['teller', 'masterAkun'], ['teller', 'transaksi'],
+        ['teller', 'transaksi'],
         ['staf', 'approvalPgd'],
         ['admin', 'kelolaUser'], ['admin', 'actLog'],
-        ['manager', 'transaksi'], ['manager', 'approvalTrx'],
+        ['manager', 'transaksi'], ['manager', 'approvalTrx'], ['manager', 'masterAkun'],
         ['manager', 'approvalPgd'], ['manager', 'laporan'], ['manager', 'finalisasi'],
         ['owner', 'transaksi'], ['owner', 'approvalPgd'],
         ['owner', 'laporan'], ['owner', 'actLog'],
