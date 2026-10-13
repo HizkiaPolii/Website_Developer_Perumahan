@@ -423,9 +423,9 @@ export function useFinancialReports() {
         ? `?${new URLSearchParams(params).toString()}`
         : '';
       const response = await callWithFallback('GET', [
+        `/api/dashboard/reports${queryStr}`,
         `/api/financial-reports${queryStr}`,
-        `/api/reports${queryStr}`,
-        `/api/dashboard/reports${queryStr}`
+        `/api/reports${queryStr}`
       ]);
       return getResponseData<any[]>(response, []).map(normalizeFinancialReport);
     } catch (err: any) {
@@ -441,9 +441,9 @@ export function useFinancialReports() {
       setLoading(true);
       setError(null);
       const response = await callWithFallback('GET', [
+        `/api/dashboard/reports/${id}`,
         `/api/financial-reports/${id}`,
-        `/api/reports/${id}`,
-        `/api/dashboard/reports/${id}`
+        `/api/reports/${id}`
       ]);
       const data = getResponseData<any | null>(response, null);
       return data ? normalizeFinancialReport(data) : null;
@@ -460,9 +460,9 @@ export function useFinancialReports() {
       setLoading(true);
       setError(null);
       const response = await callWithFallback('PUT', [
+        `/api/dashboard/reports/${id}`,
         `/api/financial-reports/${id}`,
-        `/api/reports/${id}`,
-        `/api/dashboard/reports/${id}`
+        `/api/reports/${id}`
       ], data);
       const updated = getResponseData<any | null>(response, null);
       return updated ? normalizeFinancialReport(updated) : null;
@@ -479,9 +479,9 @@ export function useFinancialReports() {
       setLoading(true);
       setError(null);
       const response = await callWithFallback('POST', [
+        '/api/dashboard/reports',
         '/api/financial-reports',
-        '/api/reports',
-        '/api/dashboard/reports'
+        '/api/reports'
       ], data);
       const created = getResponseData<any | null>(response, null);
       return created ? normalizeFinancialReport(created) : null;
@@ -498,9 +498,9 @@ export function useFinancialReports() {
       setLoading(true);
       setError(null);
       const response = await callWithFallback('POST', [
+        `/api/dashboard/reports/${id}/finalize`,
         `/api/financial-reports/${id}/finalize`,
-        `/api/reports/${id}/finalize`,
-        `/api/dashboard/reports/${id}/finalize`
+        `/api/reports/${id}/finalize`
       ], {
         finalizedBy,
         notes
@@ -520,9 +520,9 @@ export function useFinancialReports() {
       setLoading(true);
       setError(null);
       const response = await callWithFallback('POST', [
+        '/api/dashboard/balance-sheet',
         '/api/reports/balance-sheet/generate',
-        '/api/financial-reports/balance-sheet/generate',
-        '/api/dashboard/balance-sheet'
+        '/api/financial-reports/balance-sheet/generate'
       ], data);
       const generated = getResponseData<any | null>(response, null);
       return generated ? normalizeFinancialReport(generated) : null;
@@ -539,9 +539,9 @@ export function useFinancialReports() {
       setLoading(true);
       setError(null);
       const response = await callWithFallback('POST', [
+        '/api/dashboard/income-statement',
         '/api/reports/income-statement/generate',
-        '/api/financial-reports/income-statement/generate',
-        '/api/dashboard/income-statement'
+        '/api/financial-reports/income-statement/generate'
       ], data);
       const generated = getResponseData<any | null>(response, null);
       return generated ? normalizeFinancialReport(generated) : null;
@@ -615,9 +615,9 @@ export function useFinancialReports() {
       setLoading(true);
       setError(null);
       const response = await callWithFallback('DELETE', [
+        `/api/dashboard/reports/${id}`,
         `/api/financial-reports/${id}`,
-        `/api/reports/${id}`,
-        `/api/dashboard/reports/${id}`
+        `/api/reports/${id}`
       ]);
       return response.success;
     } catch (err: any) {
